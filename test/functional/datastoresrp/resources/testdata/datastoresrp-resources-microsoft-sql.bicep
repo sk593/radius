@@ -1,4 +1,4 @@
-import radius as radius
+provider 'br:shruthikumar.azurecr.io/test/radius@1.0.0'
 
 @description('Specifies the location for resources.')
 param location string = 'East US'
@@ -46,7 +46,7 @@ resource sqlapp 'Applications.Core/containers@2023-10-01-preview' = {
     container: {
       image: magpieImage
       env: {
-        CONNECTION_SQL_CONNECTIONSTRING: db.connectionString()
+        // CONNECTION_SQL_CONNECTIONSTRING: db.connectionString()
       }
       readinessProbe: {
         kind: 'httpGet'

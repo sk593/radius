@@ -1,4 +1,4 @@
-import aws as aws
+provider 'br:shruthikumar.azurecr.io/test/aws@1.0.0'
 
 param creationTimestamp string
 param dbSubnetGroupName string

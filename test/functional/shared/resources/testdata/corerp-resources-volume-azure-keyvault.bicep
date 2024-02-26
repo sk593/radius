@@ -5,7 +5,7 @@
 // 3. Create Keyvault volume.
 // 4. Create container which associated keyvault volume.
 
-import radius as radius
+provider 'br:shruthikumar.azurecr.io/test/radius@1.0.0'
 
 @description('Specifies the location for resources.')
 param location string = 'global'

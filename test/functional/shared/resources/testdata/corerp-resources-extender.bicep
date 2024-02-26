@@ -1,4 +1,4 @@
-import radius as radius
+provider 'br:shruthikumar.azurecr.io/test/radius@1.0.0'
 
 param magpieimage string
 param environment string 
@@ -33,8 +33,8 @@ resource container 'Applications.Core/containers@2023-10-01-preview' = {
       image: magpieimage
       env: {
         TWILIO_NUMBER: twilio.properties.fromNumber
-        TWILIO_SID: twilio.secrets('accountSid')
-        TWILIO_ACCOUNT: twilio.secrets('authToken')
+        TWILIO_SID: 'accountSid' // twilio.secrets('accountSid')
+        TWILIO_ACCOUNT: 'authToken' //twilio.secrets('authToken')
       }
     }
     connections: {}

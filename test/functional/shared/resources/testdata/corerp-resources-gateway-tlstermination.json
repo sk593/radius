@@ -1,0 +1,135 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.25.53.49325",
+      "templateHash": "13803919062438876559"
+    }
+  },
+  "parameters": {
+    "environment": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the environment for resources."
+      }
+    },
+    "port": {
+      "type": "int",
+      "defaultValue": 3000,
+      "metadata": {
+        "description": "Specifies the port for the container resource."
+      }
+    },
+    "magpieimage": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the image for the container resource."
+      }
+    },
+    "tlscrt": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Specifies tls cert secret values."
+      }
+    },
+    "tlskey": {
+      "type": "securestring"
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "radius",
+      "version": "1.0.0"
+    }
+  },
+  "resources": {
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-resources-gateway-tlstermination",
+        "properties": {
+          "environment": "[parameters('environment')]"
+        }
+      }
+    },
+    "gateway": {
+      "import": "radius",
+      "type": "Applications.Core/gateways@2023-10-01-preview",
+      "properties": {
+        "name": "tls-gtwy-gtwy",
+        "properties": {
+          "application": "[reference('app').id]",
+          "tls": {
+            "certificateFrom": "[reference('certificate').id]"
+          },
+          "routes": [
+            {
+              "path": "/",
+              "destination": "http://tls-gtwy-front-ctnr:443"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "app",
+        "certificate"
+      ]
+    },
+    "certificate": {
+      "import": "radius",
+      "type": "Applications.Core/secretStores@2023-10-01-preview",
+      "properties": {
+        "name": "tls-gtwy-cert",
+        "properties": {
+          "application": "[reference('app').id]",
+          "type": "certificate",
+          "data": {
+            "tls.key": {
+              "value": "[parameters('tlskey')]"
+            },
+            "tls.crt": {
+              "value": "[parameters('tlscrt')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "app"
+      ]
+    },
+    "frontendContainer": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "tls-gtwy-front-ctnr",
+        "properties": {
+          "application": "[reference('app').id]",
+          "container": {
+            "image": "[parameters('magpieimage')]",
+            "ports": {
+              "web": {
+                "containerPort": "[parameters('port')]",
+                "port": 443
+              }
+            },
+            "readinessProbe": {
+              "kind": "tcp",
+              "containerPort": "[parameters('port')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "app"
+      ]
+    }
+  }
+}

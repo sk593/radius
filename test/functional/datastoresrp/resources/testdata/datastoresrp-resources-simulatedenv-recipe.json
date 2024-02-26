@@ -1,0 +1,127 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.25.53.49325",
+      "templateHash": "12968048999304966675"
+    }
+  },
+  "parameters": {
+    "registry": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "magpieimage": {
+      "type": "string"
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "radius",
+      "version": "1.0.0"
+    }
+  },
+  "resources": {
+    "env": {
+      "import": "radius",
+      "type": "Applications.Core/environments@2023-10-01-preview",
+      "properties": {
+        "name": "dsrp-resources-simenv-recipe-env",
+        "location": "global",
+        "properties": {
+          "compute": {
+            "kind": "kubernetes",
+            "resourceId": "self",
+            "namespace": "dsrp-resources-simenv-recipe-env"
+          },
+          "recipes": {
+            "Applications.Datastores/mongoDatabases": {
+              "mongodb-recipe-kubernetes": {
+                "templateKind": "bicep",
+                "templatePath": "[format('{0}/test/functional/shared/recipes/mongodb-recipe-kubernetes:{1}', parameters('registry'), parameters('version'))]"
+              }
+            }
+          },
+          "simulated": true
+        }
+      }
+    },
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "dsrp-resources-simenv-recipe",
+        "location": "global",
+        "properties": {
+          "environment": "[reference('env').id]",
+          "extensions": [
+            {
+              "kind": "kubernetesNamespace",
+              "namespace": "dsrp-resources-simenv-recipe-app"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "env"
+      ]
+    },
+    "webapp": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "mongodb-app-ctnr-simenv",
+        "location": "global",
+        "properties": {
+          "application": "[reference('app').id]",
+          "connections": {
+            "mongodb": {
+              "source": "[reference('recipedb').id]"
+            }
+          },
+          "container": {
+            "image": "[parameters('magpieimage')]",
+            "env": {},
+            "readinessProbe": {
+              "kind": "httpGet",
+              "containerPort": 3000,
+              "path": "/healthz"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "app",
+        "recipedb"
+      ]
+    },
+    "recipedb": {
+      "import": "radius",
+      "type": "Applications.Datastores/mongoDatabases@2023-10-01-preview",
+      "properties": {
+        "name": "mongodb-db-simenv",
+        "location": "global",
+        "properties": {
+          "application": "[reference('app').id]",
+          "environment": "[reference('env').id]",
+          "recipe": {
+            "name": "mongodb-recipe-kubernetes"
+          }
+        }
+      },
+      "dependsOn": [
+        "app",
+        "env"
+      ]
+    }
+  }
+}

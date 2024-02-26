@@ -1,0 +1,83 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.25.53.49325",
+      "templateHash": "17631246057691494372"
+    }
+  },
+  "parameters": {
+    "magpieimage": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string"
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "radius",
+      "version": "1.0.0"
+    }
+  },
+  "resources": {
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-resources-extender",
+        "location": "global",
+        "properties": {
+          "environment": "[parameters('environment')]"
+        }
+      }
+    },
+    "twilio": {
+      "import": "radius",
+      "type": "Applications.Core/extenders@2023-10-01-preview",
+      "properties": {
+        "name": "extr-twilio",
+        "properties": {
+          "environment": "[parameters('environment')]",
+          "fromNumber": "222-222-2222",
+          "secrets": {
+            "accountSid": "sid",
+            "authToken": "token"
+          },
+          "resourceProvisioning": "manual"
+        }
+      }
+    },
+    "container": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "extr-ctnr",
+        "location": "global",
+        "properties": {
+          "application": "[reference('app').id]",
+          "container": {
+            "image": "[parameters('magpieimage')]",
+            "env": {
+              "TWILIO_NUMBER": "[reference('twilio').properties.fromNumber]",
+              "TWILIO_SID": "accountSid",
+              "TWILIO_ACCOUNT": "authToken"
+            }
+          },
+          "connections": {}
+        }
+      },
+      "dependsOn": [
+        "app",
+        "twilio"
+      ]
+    }
+  }
+}

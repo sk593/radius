@@ -1,0 +1,118 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.25.53.49325",
+      "templateHash": "5834615731233382957"
+    }
+  },
+  "parameters": {
+    "magpieimage": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string"
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "radius",
+      "version": "1.0.0"
+    }
+  },
+  "resources": {
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "dsrp-resources-redis-manual",
+        "location": "global",
+        "properties": {
+          "environment": "[parameters('environment')]"
+        }
+      }
+    },
+    "webapp": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "rds-app-ctnr",
+        "location": "global",
+        "properties": {
+          "application": "[reference('app').id]",
+          "container": {
+            "image": "[parameters('magpieimage')]",
+            "env": {},
+            "readinessProbe": {
+              "kind": "httpGet",
+              "containerPort": 3000,
+              "path": "/healthz"
+            }
+          },
+          "connections": {
+            "redis": {
+              "source": "[reference('redis').id]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "app",
+        "redis"
+      ]
+    },
+    "redisContainer": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "rds-ctnr",
+        "location": "global",
+        "properties": {
+          "application": "[reference('app').id]",
+          "container": {
+            "image": "redis:6.2",
+            "ports": {
+              "redis": {
+                "containerPort": 6379,
+                "port": 80
+              }
+            }
+          },
+          "connections": {}
+        }
+      },
+      "dependsOn": [
+        "app"
+      ]
+    },
+    "redis": {
+      "import": "radius",
+      "type": "Applications.Datastores/redisCaches@2023-10-01-preview",
+      "properties": {
+        "name": "rds-rds",
+        "location": "global",
+        "properties": {
+          "environment": "[parameters('environment')]",
+          "application": "[reference('app').id]",
+          "resourceProvisioning": "manual",
+          "host": "rds-ctnr",
+          "port": 80,
+          "secrets": {
+            "connectionString": "rds-ctnr:6379",
+            "password": ""
+          }
+        }
+      },
+      "dependsOn": [
+        "app"
+      ]
+    }
+  }
+}

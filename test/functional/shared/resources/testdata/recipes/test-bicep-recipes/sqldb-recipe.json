@@ -1,0 +1,152 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.25.53.49325",
+      "templateHash": "3130513519572111160"
+    }
+  },
+  "parameters": {
+    "context": {
+      "type": "object"
+    },
+    "username": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the SQL username."
+      }
+    },
+    "password": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Specifies the SQL password."
+      }
+    }
+  },
+  "imports": {
+    "kubernetes": {
+      "provider": "Kubernetes",
+      "version": "1.0.0",
+      "config": {
+        "kubeConfig": "",
+        "namespace": "[parameters('context').runtime.kubernetes.namespace]"
+      }
+    }
+  },
+  "resources": {
+    "sql": {
+      "import": "kubernetes",
+      "type": "apps/Deployment@v1",
+      "properties": {
+        "metadata": {
+          "name": "[format('sql-{0}', uniqueString(parameters('context').resource.id))]"
+        },
+        "spec": {
+          "replicas": 1,
+          "selector": {
+            "matchLabels": {
+              "app": "sql-app",
+              "resource": "[parameters('context').resource.name]"
+            }
+          },
+          "template": {
+            "metadata": {
+              "labels": {
+                "app": "sql-app",
+                "resource": "[parameters('context').resource.name]"
+              }
+            },
+            "spec": {
+              "containers": [
+                {
+                  "name": "sql",
+                  "image": "mcr.microsoft.com/mssql/server:2022-latest",
+                  "env": [
+                    {
+                      "name": "MSSQL_SA_PASSWORD",
+                      "value": "[parameters('password')]"
+                    },
+                    {
+                      "name": "MSSQL_SA_USERNAME",
+                      "value": "[parameters('username')]"
+                    },
+                    {
+                      "name": "ACCEPT_EULA",
+                      "value": "Y"
+                    }
+                  ],
+                  "resources": {
+                    "requests": {
+                      "cpu": "1200m",
+                      "memory": "2048Mi"
+                    },
+                    "limits": {
+                      "cpu": "1500m",
+                      "memory": "4096Mi"
+                    }
+                  },
+                  "ports": [
+                    {
+                      "containerPort": 1433
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "svc": {
+      "import": "kubernetes",
+      "type": "core/Service@v1",
+      "properties": {
+        "metadata": {
+          "name": "[format('sql-{0}', uniqueString(parameters('context').resource.id))]"
+        },
+        "spec": {
+          "type": "ClusterIP",
+          "ports": [
+            {
+              "port": 1433
+            }
+          ],
+          "selector": {
+            "app": "sql-app",
+            "resource": "[parameters('context').resource.name]"
+          }
+        }
+      },
+      "metadata": {
+        "description": "Configure back-end service"
+      }
+    }
+  },
+  "outputs": {
+    "result": {
+      "type": "object",
+      "value": {
+        "resources": [
+          "[format('/planes/kubernetes/local/namespaces/{0}/providers/core/Service/{1}', reference('svc').metadata.namespace, reference('svc').metadata.name)]",
+          "[format('/planes/kubernetes/local/namespaces/{0}/providers/apps/Deployment/{1}', reference('sql').metadata.namespace, reference('sql').metadata.name)]"
+        ],
+        "values": {
+          "server": "[format('{0}.{1}.svc.cluster.local', reference('svc').metadata.name, reference('svc').metadata.namespace)]",
+          "database": "master",
+          "port": 1433,
+          "username": "[parameters('username')]"
+        },
+        "secrets": {
+          "password": "[parameters('password')]"
+        }
+      }
+    }
+  }
+}

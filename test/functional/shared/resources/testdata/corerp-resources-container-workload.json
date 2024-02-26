@@ -1,0 +1,140 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.25.53.49325",
+      "templateHash": "6292874732630093571"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "eastus",
+      "metadata": {
+        "description": "Specifies the location for resources."
+      }
+    },
+    "magpieimage": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the image of the container resource."
+      }
+    },
+    "oidcIssuer": {
+      "type": "string",
+      "defaultValue": "https://radiusoidc.blob.core.windows.net/kubeoidc/",
+      "metadata": {
+        "description": "Specifies the oidc issuer URL."
+      }
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "radius",
+      "version": "1.0.0"
+    }
+  },
+  "resources": {
+    "env": {
+      "import": "radius",
+      "type": "Applications.Core/environments@2023-10-01-preview",
+      "properties": {
+        "name": "azstorage-workload-env",
+        "location": "[parameters('location')]",
+        "properties": {
+          "compute": {
+            "kind": "kubernetes",
+            "resourceId": "self",
+            "namespace": "azstorage-workload-env",
+            "identity": {
+              "kind": "azure.com.workload",
+              "oidcIssuer": "[parameters('oidcIssuer')]"
+            }
+          },
+          "providers": {
+            "azure": {
+              "scope": "[resourceGroup().id]"
+            }
+          }
+        }
+      }
+    },
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-resources-container-workload",
+        "location": "[parameters('location')]",
+        "properties": {
+          "environment": "[reference('env').id]",
+          "extensions": [
+            {
+              "kind": "kubernetesNamespace",
+              "namespace": "azstorage-workload-app"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "env"
+      ]
+    },
+    "container": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "azstorage-ctnr",
+        "location": "[parameters('location')]",
+        "properties": {
+          "application": "[reference('app').id]",
+          "container": {
+            "image": "[parameters('magpieimage')]",
+            "env": {
+              "CONNECTION_STORAGE_ACCOUNTNAME": "[format('sawi{0}', uniqueString(resourceGroup().id, deployment().name))]"
+            },
+            "readinessProbe": {
+              "kind": "httpGet",
+              "containerPort": 3000,
+              "path": "/healthz"
+            }
+          },
+          "connections": {
+            "storage": {
+              "source": "[resourceId('Microsoft.Storage/storageAccounts', format('sawi{0}', uniqueString(resourceGroup().id, deployment().name)))]",
+              "iam": {
+                "kind": "azure",
+                "roles": [
+                  "Storage Blob Data Contributor"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "app",
+        "storageAccount"
+      ]
+    },
+    "storageAccount": {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2021-09-01",
+      "name": "[format('sawi{0}', uniqueString(resourceGroup().id, deployment().name))]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "accessTier": "Hot"
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import kubernetes as kubernetes {
+provider 'kubernetes@1.0.0' with {
   kubeConfig: ''
   namespace: namespace
 }

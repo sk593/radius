@@ -1,4 +1,4 @@
-import radius as radius
+provider 'br:shruthikumar.azurecr.io/test/radius@1.0.0'
 
 param registry string
 param version string

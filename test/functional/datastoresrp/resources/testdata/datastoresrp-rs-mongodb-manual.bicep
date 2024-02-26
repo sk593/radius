@@ -1,4 +1,4 @@
-import radius as radius
+provider 'br:shruthikumar.azurecr.io/test/radius@1.0.0'
 
 @description('Admin username for the Mongo database. Default is "admin"')
 param username string = 'admin'
@@ -45,7 +45,7 @@ resource mongoContainer 'Applications.Core/containers@2023-10-01-preview' = {
     container: {
       image: 'mongo:4.2'
       env: {
-        DBCONNECTION: mongo.connectionString()
+        // DBCONNECTION: mongo.connectionString()
         MONGO_INITDB_ROOT_USERNAME: username
         MONGO_INITDB_ROOT_PASSWORD: password
       }

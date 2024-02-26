@@ -1,4 +1,4 @@
-import radius as radius
+provider 'br:shruthikumar.azurecr.io/test/radius@1.0.0'
 
 param rg string = resourceGroup().name
 
@@ -62,7 +62,7 @@ resource webapp 'Applications.Core/containers@2023-10-01-preview' = {
     container: {
       image: magpieimage
       env: {
-        DBCONNECTION: recipedb.connectionString()
+        // DBCONNECTION: recipedb.connectionString()
       }
       readinessProbe:{
         kind:'httpGet'

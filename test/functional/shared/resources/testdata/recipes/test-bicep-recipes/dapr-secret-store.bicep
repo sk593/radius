@@ -1,4 +1,4 @@
-import kubernetes as kubernetes {
+provider 'kubernetes@1.0.0' with {
   namespace: context.runtime.kubernetes.namespace
   kubeConfig: ''
 }

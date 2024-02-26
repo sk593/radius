@@ -1,4 +1,4 @@
-import radius as radius
+provider 'br:shruthikumar.azurecr.io/test/radius@1.0.0'
 
 @description('The OCI registry for test Bicep recipes.')
 param registry string

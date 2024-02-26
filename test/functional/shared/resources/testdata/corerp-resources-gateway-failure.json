@@ -1,0 +1,88 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.25.53.49325",
+      "templateHash": "16018526071495154439"
+    }
+  },
+  "parameters": {
+    "environment": {
+      "type": "string",
+      "metadata": {
+        "description": "ID of the Radius Environment. Passed in automatically via the rad CLI"
+      }
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "radius",
+      "version": "1.0.0"
+    }
+  },
+  "resources": {
+    "demoApplication": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-resources-gateway-failure-app",
+        "properties": {
+          "environment": "[parameters('environment')]"
+        }
+      }
+    },
+    "demoSecretStore": {
+      "import": "radius",
+      "type": "Applications.Core/secretStores@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-resources-gateway-failure-secretstore",
+        "properties": {
+          "application": "[reference('demoApplication').id]",
+          "type": "certificate",
+          "resource": "mynamespace/secret",
+          "data": {
+            "tls.crt": {},
+            "tls.key": {}
+          }
+        }
+      },
+      "dependsOn": [
+        "demoApplication"
+      ]
+    },
+    "demoGateway": {
+      "import": "radius",
+      "type": "Applications.Core/gateways@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-resources-gateway-failure-gateway",
+        "properties": {
+          "application": "[reference('demoApplication').id]",
+          "hostname": {
+            "fullyQualifiedHostname": "a.example.com"
+          },
+          "routes": [
+            {
+              "path": "/",
+              "destination": "http://demo-container:3000"
+            }
+          ],
+          "tls": {
+            "certificateFrom": "[reference('demoSecretStore').id]",
+            "minimumProtocolVersion": "1.2"
+          }
+        }
+      },
+      "dependsOn": [
+        "demoApplication",
+        "demoSecretStore"
+      ]
+    }
+  }
+}

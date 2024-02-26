@@ -1,0 +1,99 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.25.53.49325",
+      "templateHash": "17288012785875249869"
+    }
+  },
+  "parameters": {
+    "registry": {
+      "type": "string",
+      "metadata": {
+        "description": "The OCI registry for test Bicep recipes."
+      }
+    },
+    "version": {
+      "type": "string",
+      "metadata": {
+        "description": "The OCI tag for test Bicep recipes."
+      }
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "radius",
+      "version": "1.0.0"
+    }
+  },
+  "resources": {
+    "env": {
+      "import": "radius",
+      "type": "Applications.Core/environments@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-resources-extender-recipe-env",
+        "location": "global",
+        "properties": {
+          "compute": {
+            "kind": "kubernetes",
+            "resourceId": "self",
+            "namespace": "corerp-resources-extender-recipe-env"
+          },
+          "recipes": {
+            "Applications.Core/extenders": {
+              "default": {
+                "templateKind": "bicep",
+                "templatePath": "[format('{0}/test/functional/shared/recipes/extender-recipe:{1}', parameters('registry'), parameters('version'))]",
+                "parameters": {
+                  "containerImage": "[format('{0}/magpiego:{1}', parameters('registry'), parameters('version'))]"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-resources-extender-recipe",
+        "location": "global",
+        "properties": {
+          "environment": "[reference('env').id]",
+          "extensions": [
+            {
+              "kind": "kubernetesNamespace",
+              "namespace": "corerp-resources-extender-recipe-app"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "env"
+      ]
+    },
+    "extender": {
+      "import": "radius",
+      "type": "Applications.Core/extenders@2023-10-01-preview",
+      "properties": {
+        "name": "extender-recipe",
+        "properties": {
+          "environment": "[reference('env').id]",
+          "application": "[reference('app').id]"
+        }
+      },
+      "dependsOn": [
+        "app",
+        "env"
+      ]
+    }
+  }
+}

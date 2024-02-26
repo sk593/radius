@@ -1,0 +1,125 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.25.53.49325",
+      "templateHash": "13963592784643558063"
+    }
+  },
+  "parameters": {
+    "magpieimage": {
+      "type": "string"
+    },
+    "registry": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "radius",
+      "version": "1.0.0"
+    }
+  },
+  "resources": {
+    "env": {
+      "import": "radius",
+      "type": "Applications.Core/environments@2023-10-01-preview",
+      "properties": {
+        "name": "dpsb-recipe-env",
+        "properties": {
+          "compute": {
+            "kind": "kubernetes",
+            "resourceId": "self",
+            "namespace": "dpsb-recipe-env"
+          },
+          "recipes": {
+            "Applications.Dapr/pubSubBrokers": {
+              "default": {
+                "templateKind": "bicep",
+                "templatePath": "[format('{0}/test/functional/shared/recipes/dapr-pubsub-broker:{1}', parameters('registry'), parameters('version'))]"
+              }
+            }
+          }
+        }
+      }
+    },
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "dpsb-recipe-app",
+        "properties": {
+          "environment": "[reference('env').id]",
+          "extensions": [
+            {
+              "kind": "kubernetesNamespace",
+              "namespace": "dpsb-recipe-app"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "env"
+      ]
+    },
+    "myapp": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "dpsb-recipe-app-ctnr",
+        "properties": {
+          "application": "[reference('app').id]",
+          "connections": {
+            "daprpubsub": {
+              "source": "[reference('pubsubBroker').id]"
+            }
+          },
+          "container": {
+            "image": "[parameters('magpieimage')]",
+            "readinessProbe": {
+              "kind": "httpGet",
+              "containerPort": 3000,
+              "path": "/healthz"
+            }
+          },
+          "extensions": [
+            {
+              "kind": "daprSidecar",
+              "appId": "dpsb-recipe-app-ctnr",
+              "appPort": 3000
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "app",
+        "pubsubBroker"
+      ]
+    },
+    "pubsubBroker": {
+      "import": "radius",
+      "type": "Applications.Dapr/pubSubBrokers@2023-10-01-preview",
+      "properties": {
+        "name": "dpsb-recipe",
+        "properties": {
+          "application": "[reference('app').id]",
+          "environment": "[reference('env').id]"
+        }
+      },
+      "dependsOn": [
+        "app",
+        "env"
+      ]
+    }
+  }
+}

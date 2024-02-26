@@ -1,0 +1,107 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.25.53.49325",
+      "templateHash": "16872239945069205279"
+    }
+  },
+  "parameters": {
+    "context": {
+      "type": "object"
+    }
+  },
+  "imports": {
+    "kubernetes": {
+      "provider": "Kubernetes",
+      "version": "1.0.0",
+      "config": {
+        "kubeConfig": "",
+        "namespace": "[parameters('context').runtime.kubernetes.namespace]"
+      }
+    }
+  },
+  "resources": {
+    "redis": {
+      "import": "kubernetes",
+      "type": "apps/Deployment@v1",
+      "properties": {
+        "metadata": {
+          "name": "[format('redis-{0}', uniqueString(parameters('context').resource.id))]"
+        },
+        "spec": {
+          "selector": {
+            "matchLabels": {
+              "app": "redis",
+              "resource": "[parameters('context').resource.name]"
+            }
+          },
+          "template": {
+            "metadata": {
+              "labels": {
+                "app": "redis",
+                "resource": "[parameters('context').resource.name]"
+              }
+            },
+            "spec": {
+              "containers": [
+                {
+                  "name": "redis",
+                  "image": "redis",
+                  "ports": [
+                    {
+                      "containerPort": 6379
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "svc": {
+      "import": "kubernetes",
+      "type": "core/Service@v1",
+      "properties": {
+        "metadata": {
+          "name": "[format('redis-{0}', uniqueString(parameters('context').resource.id))]"
+        },
+        "spec": {
+          "type": "ClusterIP",
+          "selector": {
+            "app": "redis",
+            "resource": "[parameters('context').resource.name]"
+          },
+          "ports": [
+            {
+              "port": 6379
+            }
+          ]
+        }
+      }
+    }
+  },
+  "outputs": {
+    "result": {
+      "type": "object",
+      "value": {
+        "resources": [
+          "[format('/planes/kubernetes/local/namespaces/{0}/providers/core/Service/{1}', reference('svc').metadata.namespace, reference('svc').metadata.name)]",
+          "[format('/planes/kubernetes/local/namespaces/{0}/providers/apps/Deployment/{1}', reference('redis').metadata.namespace, reference('redis').metadata.name)]"
+        ],
+        "values": {
+          "host": "[format('{0}.{1}.svc.cluster.local', reference('svc').metadata.name, reference('svc').metadata.namespace)]",
+          "port": 6379
+        }
+      }
+    }
+  }
+}

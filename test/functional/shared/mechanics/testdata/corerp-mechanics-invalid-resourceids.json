@@ -1,0 +1,132 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.25.53.49325",
+      "templateHash": "8101368510356696984"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "global",
+      "metadata": {
+        "description": "Specifies the location for resources."
+      }
+    },
+    "environment": {
+      "type": "string",
+      "defaultValue": "test",
+      "metadata": {
+        "description": "Specifies the environment for resources."
+      }
+    },
+    "magpieimage": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the image to be deployed."
+      }
+    },
+    "registry": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "radius",
+      "version": "1.0.0"
+    }
+  },
+  "resources": {
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-mechanics-invalid-resourceids",
+        "location": "[parameters('location')]",
+        "properties": {
+          "environment": "[parameters('environment')]"
+        }
+      }
+    },
+    "env": {
+      "import": "radius",
+      "type": "Applications.Core/environments@2023-10-01-preview",
+      "properties": {
+        "name": "invalid-env",
+        "properties": {
+          "compute": {
+            "kind": "kubernetes",
+            "resourceId": "self",
+            "namespace": "invalid-env"
+          },
+          "recipes": {
+            "Applications.Dapr/pubSubBrokers": {
+              "default": {
+                "templateKind": "bicep",
+                "templatePath": "[format('{0}/test/functional/shared/recipes/dapr-pubsub-broker:{1}', parameters('registry'), parameters('version'))]"
+              }
+            }
+          }
+        }
+      }
+    },
+    "extender": {
+      "import": "radius",
+      "type": "Applications.Core/extenders@2023-10-01-preview",
+      "properties": {
+        "name": "invalid-extndr",
+        "properties": {
+          "application": "[reference('app').location]",
+          "environment": "[reference('env').id]",
+          "resourceProvisioning": "manual"
+        }
+      },
+      "dependsOn": [
+        "app",
+        "env"
+      ]
+    },
+    "gateway": {
+      "import": "radius",
+      "type": "Applications.Core/gateways@2023-10-01-preview",
+      "properties": {
+        "name": "invalid-gtwy",
+        "location": "[parameters('location')]",
+        "properties": {
+          "application": "not_an_id",
+          "routes": [
+            {
+              "destination": "",
+              "path": ""
+            }
+          ]
+        }
+      }
+    },
+    "container": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "invalid-ctnr",
+        "location": "[parameters('location')]",
+        "properties": {
+          "application": "/subscriptions/00000000-0000-0000-0000-000000000000/resourcegroups/default/providers/applications.core/environments/env",
+          "container": {
+            "image": "[parameters('magpieimage')]"
+          }
+        }
+      }
+    }
+  }
+}

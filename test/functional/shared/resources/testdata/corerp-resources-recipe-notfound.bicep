@@ -1,4 +1,4 @@
-import radius as radius
+provider 'br:shruthikumar.azurecr.io/test/radius@1.0.0'
 
 @description('The base name of the test, used to qualify resources and namespaces. eg: corerp-resources-terraform-helloworld')
 param basename string

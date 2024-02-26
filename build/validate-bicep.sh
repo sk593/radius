@@ -20,7 +20,7 @@ do
     # - Compiled output (ARM templates) go to rad-bicep's stdout
     # - rad-bicep's stdout goes to /dev/null
     # - rad-bicep's stderr goes to the variable
-    if grep -q "import radius as radius" $F
+    if grep -q "provider 'br:shruthikumar.azurecr.io/test/radius@1.0.0'" $F
     then
         exec 3>&1
         echo "running: $BICEP_PATH build $F"

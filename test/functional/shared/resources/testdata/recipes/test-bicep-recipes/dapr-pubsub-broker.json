@@ -1,0 +1,220 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.25.53.49325",
+      "templateHash": "4657105339454194089"
+    }
+  },
+  "parameters": {
+    "context": {
+      "type": "object"
+    }
+  },
+  "imports": {
+    "kubernetes": {
+      "provider": "Kubernetes",
+      "version": "1.0.0",
+      "config": {
+        "namespace": "[parameters('context').runtime.kubernetes.namespace]",
+        "kubeConfig": ""
+      }
+    }
+  },
+  "resources": {
+    "dapr": {
+      "import": "kubernetes",
+      "type": "dapr.io/Component@v1alpha1",
+      "properties": {
+        "metadata": {
+          "name": "[parameters('context').resource.name]",
+          "namespace": "[parameters('context').runtime.kubernetes.namespace]"
+        },
+        "spec": {
+          "type": "pubsub.redis",
+          "metadata": [
+            {
+              "name": "redisHost",
+              "value": "[format('{0}:{1}', reference('redis').outputs.host.value, reference('redis').outputs.port.value)]"
+            },
+            {
+              "name": "redisPassword",
+              "value": ""
+            }
+          ],
+          "version": "v1"
+        }
+      },
+      "dependsOn": [
+        "redis"
+      ]
+    },
+    "redis": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('redis-{0}', uniqueString(parameters('context').resource.id))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('redis-{0}', uniqueString(parameters('context').resource.id))]"
+          },
+          "namespace": {
+            "value": "[parameters('context').runtime.kubernetes.namespace]"
+          },
+          "application": {
+            "value": "[parameters('context').application.name]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.1-experimental",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+            "_EXPERIMENTAL_FEATURES_ENABLED": [
+              "Extensibility"
+            ],
+            "_generator": {
+              "name": "bicep",
+              "version": "0.25.53.49325",
+              "templateHash": "16923936283155131688"
+            }
+          },
+          "parameters": {
+            "namespace": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "application": {
+              "type": "string",
+              "defaultValue": ""
+            }
+          },
+          "imports": {
+            "kubernetes": {
+              "provider": "Kubernetes",
+              "version": "1.0.0",
+              "config": {
+                "kubeConfig": "",
+                "namespace": "[parameters('namespace')]"
+              }
+            }
+          },
+          "resources": {
+            "redis": {
+              "import": "kubernetes",
+              "type": "apps/Deployment@v1",
+              "properties": {
+                "metadata": {
+                  "name": "[parameters('name')]"
+                },
+                "spec": {
+                  "selector": {
+                    "matchLabels": {
+                      "app": "redis",
+                      "resource": "[parameters('name')]"
+                    }
+                  },
+                  "template": {
+                    "metadata": {
+                      "labels": {
+                        "app": "redis",
+                        "resource": "[parameters('name')]",
+                        "radapp.io/application": "[if(equals(parameters('application'), ''), '', parameters('application'))]"
+                      }
+                    },
+                    "spec": {
+                      "containers": [
+                        {
+                          "name": "redis",
+                          "image": "redis",
+                          "ports": [
+                            {
+                              "containerPort": 6379
+                            }
+                          ]
+                        },
+                        {
+                          "name": "redis-monitor",
+                          "image": "redis",
+                          "args": [
+                            "redis-cli",
+                            "-h",
+                            "localhost",
+                            "MONITOR"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "svc": {
+              "import": "kubernetes",
+              "type": "core/Service@v1",
+              "properties": {
+                "metadata": {
+                  "name": "[parameters('name')]"
+                },
+                "spec": {
+                  "type": "ClusterIP",
+                  "selector": {
+                    "app": "redis",
+                    "resource": "[parameters('name')]"
+                  },
+                  "ports": [
+                    {
+                      "port": 6379
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "outputs": {
+            "resources": {
+              "type": "array",
+              "value": [
+                "[format('/planes/kubernetes/local/namespaces/{0}/providers/core/Service/{1}', reference('svc').metadata.namespace, reference('svc').metadata.name)]",
+                "[format('/planes/kubernetes/local/namespaces/{0}/providers/apps/Deployment/{1}', reference('redis').metadata.namespace, reference('redis').metadata.name)]"
+              ]
+            },
+            "host": {
+              "type": "string",
+              "value": "[format('{0}.{1}.svc.cluster.local', reference('svc').metadata.name, reference('svc').metadata.namespace)]"
+            },
+            "port": {
+              "type": "int",
+              "value": 6379
+            }
+          }
+        }
+      }
+    }
+  },
+  "outputs": {
+    "result": {
+      "type": "object",
+      "value": {
+        "resources": "[reference('redis').outputs.resources.value]",
+        "values": {
+          "componentName": "[reference('dapr').metadata.name]"
+        }
+      }
+    }
+  }
+}

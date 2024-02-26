@@ -1,0 +1,82 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.25.53.49325",
+      "templateHash": "7541285628977898502"
+    }
+  },
+  "parameters": {
+    "environment": {
+      "type": "string"
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "radius",
+      "version": "1.0.0"
+    }
+  },
+  "resources": {
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "daprrp-rs-component-name-conflict",
+        "location": "global",
+        "properties": {
+          "environment": "[parameters('environment')]"
+        }
+      }
+    },
+    "pubsub": {
+      "import": "radius",
+      "type": "Applications.Dapr/pubSubBrokers@2023-10-01-preview",
+      "properties": {
+        "name": "dapr-component",
+        "location": "global",
+        "properties": {
+          "environment": "[parameters('environment')]",
+          "application": "[reference('app').id]",
+          "resourceProvisioning": "manual",
+          "type": "pubsub.azure.servicebus",
+          "version": "v1",
+          "metadata": {
+            "name": "test"
+          }
+        }
+      },
+      "dependsOn": [
+        "app"
+      ]
+    },
+    "secretstore": {
+      "import": "radius",
+      "type": "Applications.Dapr/secretStores@2023-10-01-preview",
+      "properties": {
+        "name": "dapr-component",
+        "location": "global",
+        "properties": {
+          "environment": "[parameters('environment')]",
+          "application": "[reference('app').id]",
+          "resourceProvisioning": "manual",
+          "type": "secretstores.kubernetes",
+          "metadata": {
+            "vaultName": "test"
+          },
+          "version": "v1"
+        }
+      },
+      "dependsOn": [
+        "app"
+      ]
+    }
+  }
+}

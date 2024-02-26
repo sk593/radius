@@ -1,8 +1,9 @@
-import kubernetes as kubernetes {
+provider 'kubernetes@1.0.0' with {
   kubeConfig: ''
   namespace: 'default'
 }
-import radius as radius
+
+provider 'br:shruthikumar.azurecr.io/test/radius@1.0.0'
 
 @description('Specifies the location for resources.')
 param location string = 'local'
