@@ -101,11 +101,7 @@ export function generateTypes(host: AutorestExtensionHost, definition: ProviderD
         polymorphicBodies[definition.descriptor.constantName] = bodyType;
       }
 
-      const discriminatedBodyType = factory.addDiscriminatedObjectType(
-        fullyQualifiedType,
-        'name',
-        {},
-        polymorphicBodies);
+      const discriminatedBodyType = factory.addDiscriminatedObjectType(fullyQualifiedType, 'name', {}, polymorphicBodies);
 
       const descriptor = {
         ...definitions[0].descriptor,
@@ -143,12 +139,7 @@ export function generateTypes(host: AutorestExtensionHost, definition: ProviderD
 
       const { descriptor, bodyType } = output;
       // TODO: FIX FLAGS IDK IF THIS IS RIGHT 
-      factory.addResourceType(
-        `${getFullyQualifiedType(descriptor)}@${descriptor.apiVersion}`,
-        descriptor.scopeType,
-        undefined,
-        bodyType, 
-        ResourceFlags.None);
+      factory.addResourceType(`${getFullyQualifiedType(descriptor)}@${descriptor.apiVersion}`, descriptor.scopeType, undefined, bodyType, ResourceFlags.None);
     }
 
     for (const action of resourceActions) {
@@ -172,12 +163,7 @@ export function generateTypes(host: AutorestExtensionHost, definition: ProviderD
 
       const { actionName, descriptor } = action;
 
-      factory.addResourceFunctionType(
-        actionName,
-        getFullyQualifiedType(descriptor),
-        descriptor.apiVersion,
-        response,
-        request);
+      factory.addResourceFunctionType(actionName, getFullyQualifiedType(descriptor), descriptor.apiVersion, response, request);
     }
 
     return factory.types;
