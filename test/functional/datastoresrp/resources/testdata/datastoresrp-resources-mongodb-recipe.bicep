@@ -1,4 +1,4 @@
-provider 'br:shruthikumar.azurecr.io/test/radius@1.0.0'
+provider 'br:shruthikumar.azurecr.io/test/radius-contract@1.0.0'
 
 param rg string = resourceGroup().name
 

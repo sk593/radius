@@ -32,3 +32,12 @@ export function success<V>(value: V): SuccessResult<V> {
 export function failure<E>(error: E): FailureResult<E> {
   return { success: false, error, };
 }
+
+export function groupBy<T>(input: T[], predicate: (item: T) => string) {
+  return input.reduce<Record<string, T[]>>((prev, cur) => {
+    prev[predicate(cur)] = prev[predicate(cur)] || [];
+    prev[predicate(cur)].push(cur);
+
+    return prev;
+  }, {});
+}

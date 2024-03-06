@@ -1,4 +1,4 @@
-provider 'kubernetes@1.0.0' with {
+provider kubernetes with {
   namespace: context.runtime.kubernetes.namespace
   kubeConfig: ''
 }

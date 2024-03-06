@@ -24,7 +24,7 @@ ifeq ($(GOOS),windows)
 endif
 
 .PHONY: generate
-generate: generate-genericcliclient generate-rad-corerp-client generate-rad-datastoresrp-client generate-rad-messagingrp-client generate-rad-daprrp-client generate-rad-ucp-client generate-go generate-bicep-types generate-ucp-crd generate-controller ## Generates all targets.
+generate: generate-genericcliclient generate-rad-corerp-client generate-rad-datastoresrp-client generate-rad-messagingrp-client generate-rad-daprrp-client generate-rad-ucp-client generate-bicep-types generate-ucp-crd generate-controller ## Generates all targets.
 
 .PHONY: generate-tsp-installed
 generate-tsp-installed:
@@ -107,10 +107,10 @@ generate-mockgen-installed:
 	@which mockgen > /dev/null || { echo "run 'go install github.com/golang/mock/mockgen@v1.5.0' to install mockgen"; exit 1; }
 	@echo "$(ARROW) OK"
 
-.PHONY: generate-go
-generate-go: generate-mockgen-installed ## Generates go with 'go generate' (Mocks).
-	@echo "$(ARROW) Running go generate..."
-	go generate -v ./...
+# .PHONY: generate-go
+# generate-go: generate-mockgen-installed ## Generates go with 'go generate' (Mocks).
+# 	@echo "$(ARROW) Running go generate..."
+# 	go generate -v ./...
 
 .PHONY: generate-bicep-types
 generate-bicep-types: generate-node-installed ## Generate Bicep extensibility types

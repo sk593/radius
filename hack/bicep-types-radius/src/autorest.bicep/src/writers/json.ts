@@ -13,25 +13,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // ------------------------------------------------------------.
-import { TypeBase, TypeReference } from '../types';
+import { BicepType, TypeReference } from 'bicep-types';
 
-export function writeJson(types: TypeBase[]) {
-  return JSON.stringify(types, replacer, 0);
+export function writeJson(types: BicepType[]) {
+  const output = writeTypesJsonMapper(types);
+
+  return JSON.stringify(output, writeTypesJsonReplacer, 2);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function replacer(this: any, key: string, value: any) {
+function writeTypesJsonReplacer(key: any, value: any) {
   if (value instanceof TypeReference) {
-    return value.Index;
-  }
-
-  if (value instanceof TypeBase) {
-    const { Type, ...rest } = value;
-
     return {
-      [Type]: rest,
+      "$ref": `#/${value.index}`,
     };
   }
 
   return value;
+}
+
+function writeTypesJsonMapper(types: BicepType[]) {
+  return types.map(t => {
+    const { type, ...rest } = t;
+    return {
+      // System.Text.Json uses this as the polymorphic discriminator
+      // https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/polymorphism
+      '$type': type,
+      ...rest,
+    };
+  });
 }

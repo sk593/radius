@@ -1,9 +1,9 @@
-provider 'kubernetes@1.0.0' with {
+provider kubernetes with {
   kubeConfig: ''
   namespace: 'default'
 }
 
-provider 'br:shruthikumar.azurecr.io/test/radius@1.0.0'
+provider 'br:shruthikumar.azurecr.io/test/radius-contract@1.0.0'
 
 @description('Specifies the location for resources.')
 param location string = 'local'
