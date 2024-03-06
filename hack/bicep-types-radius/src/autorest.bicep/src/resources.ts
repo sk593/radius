@@ -18,15 +18,7 @@ import { ChoiceSchema, CodeModel, HttpMethod, HttpParameter, HttpRequest, HttpRe
 import { Channel, AutorestExtensionHost } from "@autorest/extension-base";
 import { keys, Dictionary, values, groupBy, uniqBy } from 'lodash';
 import { success, failure, Result } from './utils';
-
-export enum ScopeType {
-  Unknown = 0,
-  Tenant = 1 << 0,
-  ManagementGroup = 1 << 1,
-  Subscription = 1 << 2,
-  ResourceGroup = 1 << 3,
-  Extension = 1 << 4,
-}
+import { ScopeType }  from 'bicep-types';
 
 export interface ResourceDescriptor {
   scopeType: ScopeType;
