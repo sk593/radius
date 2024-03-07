@@ -1,4 +1,4 @@
-import radius as radius
+provider 'br:shruthikumar.azurecr.io/bicep/radius@1.0.0'
 
 @description('Specifies the location for resources.')
 param location string = 'local'

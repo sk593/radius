@@ -1,4 +1,4 @@
-import radius as radius
+provider 'br:shruthikumar.azurecr.io/bicep/radius@1.0.0'
 
 @description('Admin username for the Mongo database. Default is "admin"')
 param username string = 'admin'

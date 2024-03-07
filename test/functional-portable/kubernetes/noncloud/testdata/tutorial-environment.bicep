@@ -1,4 +1,4 @@
-import radius as radius
+provider 'br:shruthikumar.azurecr.io/bicep/radius@1.0.0'
 
 param name string
 param namespace string

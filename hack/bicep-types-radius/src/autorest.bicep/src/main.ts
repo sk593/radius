@@ -49,7 +49,6 @@ export async function processRequest(host: AutorestExtensionHost) {
       //   const filename = resourceType.name.split('/')[1].split('@')[0].toLowerCase();
       //   host.writeFile({ filename: `${outFolder}/docs/${filename}.md`, content: writeTableMarkdown(namespace, apiVersion, [resourceType], types) });
       // }
-
     }
 
     session.info(`autorest.bicep took ${Date.now() - start}ms`);

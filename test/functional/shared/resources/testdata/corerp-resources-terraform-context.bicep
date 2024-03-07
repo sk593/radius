@@ -1,4 +1,4 @@
-import radius as radius
+provider 'br:shruthikumar.azurecr.io/bicep/radius@1.0.0'
 
 @description('The URL of the server hosting test Terraform modules.')
 param moduleServer string

@@ -1,4 +1,4 @@
-import radius as rad
+provider 'br:shruthikumar.azurecr.io/bicep/radius@1.0.0'
 
 param bucketName string
 param creationTimestamp string
