@@ -609,13 +609,48 @@
     ]
   },
   {
+    "$type": "ObjectType",
+    "name": "MongoDatabaseListSecretsResult",
+    "properties": {
+      "password": {
+        "type": {
+          "$ref": "#/0"
+        },
+        "flags": 2,
+        "description": "Password to use when connecting to the target Mongo database"
+      },
+      "connectionString": {
+        "type": {
+          "$ref": "#/0"
+        },
+        "flags": 2,
+        "description": "Connection string used to connect to the target Mongo database"
+      }
+    }
+  },
+  {
+    "$type": "FunctionType",
+    "parameters": [],
+    "output": {
+      "$ref": "#/46"
+    }
+  },
+  {
     "$type": "ResourceType",
     "name": "Applications.Datastores/mongoDatabases@2023-10-01-preview",
     "scopeType": 0,
     "body": {
       "$ref": "#/3"
     },
-    "flags": 0
+    "flags": 0,
+    "functions": {
+      "listSecrets": {
+        "type": {
+          "$ref": "#/47"
+        },
+        "description": "listSecrets"
+      }
+    }
   },
   {
     "$type": "StringLiteralType",
@@ -645,28 +680,28 @@
       },
       "type": {
         "type": {
-          "$ref": "#/47"
+          "$ref": "#/49"
         },
         "flags": 10,
         "description": "The resource type"
       },
       "apiVersion": {
         "type": {
-          "$ref": "#/48"
+          "$ref": "#/50"
         },
         "flags": 10,
         "description": "The resource api version"
       },
       "properties": {
         "type": {
-          "$ref": "#/50"
+          "$ref": "#/52"
         },
         "flags": 1,
         "description": "RedisCache portable resource properties"
       },
       "tags": {
         "type": {
-          "$ref": "#/64"
+          "$ref": "#/66"
         },
         "flags": 0,
         "description": "Resource tags."
@@ -707,7 +742,7 @@
       },
       "provisioningState": {
         "type": {
-          "$ref": "#/58"
+          "$ref": "#/60"
         },
         "flags": 2,
         "description": "Provisioning state of the resource at the time the operation was called"
@@ -721,7 +756,7 @@
       },
       "secrets": {
         "type": {
-          "$ref": "#/59"
+          "$ref": "#/61"
         },
         "flags": 0,
         "description": "The secret values for the given RedisCache resource"
@@ -756,7 +791,7 @@
       },
       "resources": {
         "type": {
-          "$ref": "#/60"
+          "$ref": "#/62"
         },
         "flags": 0,
         "description": "List of the resource IDs that support the Redis resource"
@@ -770,7 +805,7 @@
       },
       "resourceProvisioning": {
         "type": {
-          "$ref": "#/63"
+          "$ref": "#/65"
         },
         "flags": 0,
         "description": "Specifies how the underlying service/resource is provisioned and managed. Available values are 'recipe', where Radius manages the lifecycle of the resource through a Recipe, and 'manual', where a user manages the resource and provides the values."
@@ -809,12 +844,6 @@
     "$type": "UnionType",
     "elements": [
       {
-        "$ref": "#/51"
-      },
-      {
-        "$ref": "#/52"
-      },
-      {
         "$ref": "#/53"
       },
       {
@@ -828,6 +857,12 @@
       },
       {
         "$ref": "#/57"
+      },
+      {
+        "$ref": "#/58"
+      },
+      {
+        "$ref": "#/59"
       }
     ]
   },
@@ -876,10 +911,10 @@
     "$type": "UnionType",
     "elements": [
       {
-        "$ref": "#/61"
+        "$ref": "#/63"
       },
       {
-        "$ref": "#/62"
+        "$ref": "#/64"
       }
     ]
   },
@@ -892,13 +927,55 @@
     }
   },
   {
+    "$type": "ObjectType",
+    "name": "RedisCacheListSecretsResult",
+    "properties": {
+      "connectionString": {
+        "type": {
+          "$ref": "#/0"
+        },
+        "flags": 2,
+        "description": "The connection string used to connect to the Redis cache"
+      },
+      "password": {
+        "type": {
+          "$ref": "#/0"
+        },
+        "flags": 2,
+        "description": "The password for this Redis cache instance"
+      },
+      "url": {
+        "type": {
+          "$ref": "#/0"
+        },
+        "flags": 2,
+        "description": "The URL used to connect to the Redis cache"
+      }
+    }
+  },
+  {
+    "$type": "FunctionType",
+    "parameters": [],
+    "output": {
+      "$ref": "#/67"
+    }
+  },
+  {
     "$type": "ResourceType",
     "name": "Applications.Datastores/redisCaches@2023-10-01-preview",
     "scopeType": 0,
     "body": {
-      "$ref": "#/49"
+      "$ref": "#/51"
     },
-    "flags": 0
+    "flags": 0,
+    "functions": {
+      "listSecrets": {
+        "type": {
+          "$ref": "#/68"
+        },
+        "description": "listSecrets"
+      }
+    }
   },
   {
     "$type": "StringLiteralType",
@@ -928,28 +1005,28 @@
       },
       "type": {
         "type": {
-          "$ref": "#/66"
+          "$ref": "#/70"
         },
         "flags": 10,
         "description": "The resource type"
       },
       "apiVersion": {
         "type": {
-          "$ref": "#/67"
+          "$ref": "#/71"
         },
         "flags": 10,
         "description": "The resource api version"
       },
       "properties": {
         "type": {
-          "$ref": "#/69"
+          "$ref": "#/73"
         },
         "flags": 1,
         "description": "SqlDatabase properties"
       },
       "tags": {
         "type": {
-          "$ref": "#/83"
+          "$ref": "#/87"
         },
         "flags": 0,
         "description": "Resource tags."
@@ -990,7 +1067,7 @@
       },
       "provisioningState": {
         "type": {
-          "$ref": "#/77"
+          "$ref": "#/81"
         },
         "flags": 2,
         "description": "Provisioning state of the resource at the time the operation was called"
@@ -1032,14 +1109,14 @@
       },
       "resources": {
         "type": {
-          "$ref": "#/78"
+          "$ref": "#/82"
         },
         "flags": 0,
         "description": "List of the resource IDs that support the SqlDatabase resource"
       },
       "secrets": {
         "type": {
-          "$ref": "#/79"
+          "$ref": "#/83"
         },
         "flags": 0,
         "description": "The secret values for the given SqlDatabase resource"
@@ -1053,7 +1130,7 @@
       },
       "resourceProvisioning": {
         "type": {
-          "$ref": "#/82"
+          "$ref": "#/86"
         },
         "flags": 0,
         "description": "Specifies how the underlying service/resource is provisioned and managed. Available values are 'recipe', where Radius manages the lifecycle of the resource through a Recipe, and 'manual', where a user manages the resource and provides the values."
@@ -1092,18 +1169,6 @@
     "$type": "UnionType",
     "elements": [
       {
-        "$ref": "#/70"
-      },
-      {
-        "$ref": "#/71"
-      },
-      {
-        "$ref": "#/72"
-      },
-      {
-        "$ref": "#/73"
-      },
-      {
         "$ref": "#/74"
       },
       {
@@ -1111,6 +1176,18 @@
       },
       {
         "$ref": "#/76"
+      },
+      {
+        "$ref": "#/77"
+      },
+      {
+        "$ref": "#/78"
+      },
+      {
+        "$ref": "#/79"
+      },
+      {
+        "$ref": "#/80"
       }
     ]
   },
@@ -1152,10 +1229,10 @@
     "$type": "UnionType",
     "elements": [
       {
-        "$ref": "#/80"
+        "$ref": "#/84"
       },
       {
-        "$ref": "#/81"
+        "$ref": "#/85"
       }
     ]
   },
@@ -1165,86 +1242,6 @@
     "properties": {},
     "additionalProperties": {
       "$ref": "#/0"
-    }
-  },
-  {
-    "$type": "ResourceType",
-    "name": "Applications.Datastores/sqlDatabases@2023-10-01-preview",
-    "scopeType": 0,
-    "body": {
-      "$ref": "#/68"
-    },
-    "flags": 0
-  },
-  {
-    "$type": "ObjectType",
-    "name": "MongoDatabaseListSecretsResult",
-    "properties": {
-      "password": {
-        "type": {
-          "$ref": "#/0"
-        },
-        "flags": 2,
-        "description": "Password to use when connecting to the target Mongo database"
-      },
-      "connectionString": {
-        "type": {
-          "$ref": "#/0"
-        },
-        "flags": 2,
-        "description": "Connection string used to connect to the target Mongo database"
-      }
-    }
-  },
-  {
-    "$type": "ResourceFunctionType",
-    "name": "listSecrets",
-    "resourceType": "Applications.Datastores/mongoDatabases",
-    "apiVersion": "2023-10-01-preview",
-    "output": {
-      "$ref": "#/85"
-    },
-    "input": {
-      "$ref": "#/30"
-    }
-  },
-  {
-    "$type": "ObjectType",
-    "name": "RedisCacheListSecretsResult",
-    "properties": {
-      "connectionString": {
-        "type": {
-          "$ref": "#/0"
-        },
-        "flags": 2,
-        "description": "The connection string used to connect to the Redis cache"
-      },
-      "password": {
-        "type": {
-          "$ref": "#/0"
-        },
-        "flags": 2,
-        "description": "The password for this Redis cache instance"
-      },
-      "url": {
-        "type": {
-          "$ref": "#/0"
-        },
-        "flags": 2,
-        "description": "The URL used to connect to the Redis cache"
-      }
-    }
-  },
-  {
-    "$type": "ResourceFunctionType",
-    "name": "listSecrets",
-    "resourceType": "Applications.Datastores/redisCaches",
-    "apiVersion": "2023-10-01-preview",
-    "output": {
-      "$ref": "#/87"
-    },
-    "input": {
-      "$ref": "#/30"
     }
   },
   {
@@ -1268,15 +1265,27 @@
     }
   },
   {
-    "$type": "ResourceFunctionType",
-    "name": "listSecrets",
-    "resourceType": "Applications.Datastores/sqlDatabases",
-    "apiVersion": "2023-10-01-preview",
+    "$type": "FunctionType",
+    "parameters": [],
     "output": {
-      "$ref": "#/89"
+      "$ref": "#/88"
+    }
+  },
+  {
+    "$type": "ResourceType",
+    "name": "Applications.Datastores/sqlDatabases@2023-10-01-preview",
+    "scopeType": 0,
+    "body": {
+      "$ref": "#/72"
     },
-    "input": {
-      "$ref": "#/30"
+    "flags": 0,
+    "functions": {
+      "listSecrets": {
+        "type": {
+          "$ref": "#/89"
+        },
+        "description": "listSecrets"
+      }
     }
   }
 ]

@@ -1,16 +1,13 @@
-provider 'br:shruthikumar.azurecr.io/bicep/radius@1.0.0'
-
-@description('Specifies the location for resources.')
-param location string = 'global'
+provider 'br:shruthikumar.azurecr.io/bicep/methods@1.0.0'
 
 resource env 'Applications.Core/environments@2023-10-01-preview' = {
-  name: 'corerp-resources-environment-env'
-  location: location
+  name: 'my-k8s-env'
+  location: 'global'
   properties: {
     compute: {
       kind: 'kubernetes'
       resourceId: 'self'
-      namespace: 'corerp-resources-environment-env'
+      namespace: 'my-k8s-env'
     }
   }
 }

@@ -623,15 +623,6 @@
     ]
   },
   {
-    "$type": "ResourceType",
-    "name": "Applications.Messaging/rabbitMQQueues@2023-10-01-preview",
-    "scopeType": 0,
-    "body": {
-      "$ref": "#/3"
-    },
-    "flags": 0
-  },
-  {
     "$type": "ObjectType",
     "name": "RabbitMQListSecretsResult",
     "properties": {
@@ -652,15 +643,27 @@
     }
   },
   {
-    "$type": "ResourceFunctionType",
-    "name": "listSecrets",
-    "resourceType": "Applications.Messaging/rabbitMQQueues",
-    "apiVersion": "2023-10-01-preview",
+    "$type": "FunctionType",
+    "parameters": [],
     "output": {
-      "$ref": "#/47"
+      "$ref": "#/46"
+    }
+  },
+  {
+    "$type": "ResourceType",
+    "name": "Applications.Messaging/rabbitMQQueues@2023-10-01-preview",
+    "scopeType": 0,
+    "body": {
+      "$ref": "#/3"
     },
-    "input": {
-      "$ref": "#/30"
+    "flags": 0,
+    "functions": {
+      "listSecrets": {
+        "type": {
+          "$ref": "#/47"
+        },
+        "description": "listSecrets"
+      }
     }
   }
 ]

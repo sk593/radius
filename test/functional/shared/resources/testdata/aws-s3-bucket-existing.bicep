@@ -1,4 +1,4 @@
-import aws as aws
+provider 'br:shruthikumar.azurecr.io/bicep/aws@4.0.0'
 
 param bucketName string
 

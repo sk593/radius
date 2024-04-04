@@ -14,9 +14,9 @@
 // limitations under the License.
 // ------------------------------------------------------------.
 
-import { AnySchema, ArraySchema, ChoiceSchema, ConstantSchema, DictionarySchema, ObjectSchema, PrimitiveSchema, Property, Schema, SchemaType, SealedChoiceSchema, StringSchema } from "@autorest/codemodel";
+import { AnyObjectSchema, AnySchema, ArraySchema, ChoiceSchema, ConstantSchema, DictionarySchema, ObjectSchema, PrimitiveSchema, Property, Schema, SchemaType, SealedChoiceSchema, StringSchema } from "@autorest/codemodel";
 import { Channel, AutorestExtensionHost } from "@autorest/extension-base";
-import { DiscriminatedObjectType, ObjectTypeProperty, ObjectTypePropertyFlags, TypeBaseKind, TypeFactory, TypeReference, ResourceFlags } from "bicep-types";
+import { DiscriminatedObjectType, ObjectType, ObjectTypeProperty, ObjectTypePropertyFlags, TypeBaseKind, TypeFactory, TypeReference, ResourceFlags, ResourceTypeFunction, FunctionParameter } from "bicep-types";
 import { uniq, keys, keyBy, Dictionary, flatMap } from 'lodash';
 import { getFullyQualifiedType, getSerializedName, parseNameSchema, ProviderDefinition, ResourceDefinition, ResourceDescriptor } from "./resources";
 
@@ -127,7 +127,7 @@ export function generateTypes(host: AutorestExtensionHost, definition: ProviderD
   }
 
   function generateTypes() {
-    const { resourcesByType, resourceActions } = definition;
+    const { resourcesByType, resourceFunctions: resourceFunctionType } = definition;
 
     for (const fullyQualifiedType in resourcesByType) {
       const definitions = resourcesByType[fullyQualifiedType];
@@ -138,32 +138,48 @@ export function generateTypes(host: AutorestExtensionHost, definition: ProviderD
       }
 
       const { descriptor, bodyType } = output;
-      // TODO: FIX FLAGS IDK IF THIS IS RIGHT 
-      factory.addResourceType(`${getFullyQualifiedType(descriptor)}@${descriptor.apiVersion}`, descriptor.scopeType, undefined, bodyType, ResourceFlags.None);
-    }
+      let resourceTypeFunctions: Record<string, ResourceTypeFunction> = {};
+      
+      let actions = resourceFunctionType[fullyQualifiedType];
+      for (const key in actions) {
+        let action = actions[key];
+        let request: TypeReference | undefined;
+        if (action.requestSchema) {
+          request = parseType(action.requestSchema, undefined);
+          if (!request) {
+            continue;
+          }
+        }
 
-    for (const action of resourceActions) {
-      let request: TypeReference | undefined;
-      if (action.requestSchema) {
-        request = parseType(action.requestSchema, undefined);
-        if (!request) {
+        if (!action.responseSchema) {
+          logWarning(`Skipping resource action ${action.actionName} under path '${action.postRequest.path}': failed to find a response schema`);
           continue;
         }
+  
+        const response = parseType(undefined, action.responseSchema);
+        if (!response) {
+          continue;
+        }
+
+        let reference : TypeReference
+        if (request === undefined) {
+          reference = factory.addFunctionType([], response); 
+        } 
+        else {
+          // Only add properties if they exist on the request
+          const reqObj = factory.lookupType(request) as ObjectType;
+          let parameters : FunctionParameter[] = [];
+          if (reqObj && reqObj.properties) {
+            Object.entries(reqObj.properties).forEach(([key, value]) => {
+              parameters.push({name: key, type: value.type, description: value.description} as FunctionParameter)
+            })          
+          }
+          reference = factory.addFunctionType(parameters, response)
+        }
+        resourceTypeFunctions[action.actionName] = {type: reference, description: action.actionName};
       }
 
-      if (!action.responseSchema) {
-        logWarning(`Skipping resource action ${action.actionName} under path '${action.postRequest.path}': failed to find a response schema`);
-        continue;
-      }
-
-      const response = parseType(undefined, action.responseSchema);
-      if (!response) {
-        continue;
-      }
-
-      const { actionName, descriptor } = action;
-
-      factory.addResourceFunctionType(actionName, getFullyQualifiedType(descriptor), descriptor.apiVersion, response, request);
+      factory.addResourceType(`${getFullyQualifiedType(descriptor)}@${descriptor.apiVersion}`, descriptor.scopeType, undefined, bodyType, ResourceFlags.None, resourceTypeFunctions);
     }
 
     return factory.types;

@@ -1,4 +1,4 @@
-provider 'br:shruthikumar.azurecr.io/bicep/radius@1.0.0'
+provider radius
 
 param magpieimage string
 param registry string

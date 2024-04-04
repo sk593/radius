@@ -1,4 +1,4 @@
-provider 'br:shruthikumar.azurecr.io/bicep/radius@1.0.0'
+provider radius
 
 @description('ID of the Radius Environment. Passed in automatically via the rad CLI')
 param environment string

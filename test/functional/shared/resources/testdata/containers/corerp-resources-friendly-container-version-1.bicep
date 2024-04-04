@@ -1,30 +1,14 @@
-provider 'br:shruthikumar.azurecr.io/bicep/radius@1.0.0'
-
-param magpieimage string
-param environment string
-
-resource app 'Applications.Core/applications@2023-10-01-preview' = {
-  name: 'corerp-resources-container-versioning'
-  location: 'global'
-  properties: {
-    environment: environment
-  }
-}
+provider 'br:shruthikumar.azurecr.io/bicep/methods@3.0.0'
 
 resource webapp 'Applications.Core/containers@2023-10-01-preview' = {
-  name: 'friendly-ctnr'
+  name: 'my-ctnr'
   location: 'global'
   properties: {
-    application: app.id
+    application: 'myapp'
     container: {
-      image: magpieimage
+      image: 'test'
       env: {
-        DBCONNECTION: redis.connectionString()
-      }
-      readinessProbe: {
-        kind: 'httpGet'
-        containerPort: 3000
-        path: '/healthz'
+        DBCONNECTION: redis.listSecrets().connectionString
       }
     }
     connections: {
@@ -35,34 +19,17 @@ resource webapp 'Applications.Core/containers@2023-10-01-preview' = {
   }
 }
 
-resource redisContainer 'Applications.Core/containers@2023-10-01-preview' = {
-  name: 'friendly-rds-ctnr'
-  location: 'global'
-  properties: {
-    application: app.id
-    container: {
-      image: 'redis:6.2'
-      ports: {
-        redis: {
-          containerPort: 6379
-        }
-      }
-    }
-    connections: {}
-  }
-}
-
 resource redis 'Applications.Datastores/redisCaches@2023-10-01-preview' = {
-  name: 'friendly-rds-rds'
+  name: 'my-rds'
   location: 'global'
   properties: {
-    environment: environment
-    application: app.id
+    environment: 'test'
+    application: 'myapp'
     resourceProvisioning: 'manual'
-    host: 'friendly-rds-ctnr'
+    host: 'my-ctnr'
     port: 6379
     secrets: {
-      connectionString: 'friendly-rds-ctnr:6379'
+      connectionString: 'my-ctnr:6379'
       password: ''
     }
   }

@@ -2,7 +2,7 @@ provider kubernetes with {
   kubeConfig: ''
   namespace: 'default'
 }
-provider 'br:shruthikumar.azurecr.io/bicep/radius@1.0.0'
+provider radius
 
 @description('Specifies the location for resources.')
 param location string = 'local'

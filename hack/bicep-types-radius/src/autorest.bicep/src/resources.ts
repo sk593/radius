@@ -32,7 +32,7 @@ export interface ProviderDefinition {
   namespace: string;
   apiVersion: string;
   resourcesByType: Dictionary<ResourceDefinition[]>;
-  resourceActions: ResourceListActionDefinition[];
+  resourceFunctions: Dictionary<ResourceListActionDefinition[]>;
 }
 
 export interface ResourceDefinition {
@@ -181,7 +181,7 @@ export function getProviderDefinitions(codeModel: CodeModel, host: AutorestExten
           namespace,
           apiVersion,
           resourcesByType: {},
-          resourceActions: [],
+          resourceFunctions: {}
         };
       }
     }
@@ -289,7 +289,7 @@ export function getProviderDefinitions(codeModel: CodeModel, host: AutorestExten
 
     for (const namespace of keys(providerDefinitions)) {
       providerDefinitions[namespace].resourcesByType = collapseDefinitions(resourcesByProvider[namespace]);
-      providerDefinitions[namespace].resourceActions = collapseActions(actionsByProvider[namespace]);
+      providerDefinitions[namespace].resourceFunctions = groupByType(actionsByProvider[namespace]);
     }
 
     return values(providerDefinitions);
@@ -561,12 +561,6 @@ export function getProviderDefinitions(codeModel: CodeModel, host: AutorestExten
     const collapsedResources = Object.values(resourcesByType).flatMap(collapseDefinitionScopes);
 
     return groupByType(collapsedResources);
-  }
-
-  function collapseActions(actions: ResourceListActionDefinition[]) {
-    const actionsByType = groupByType(actions);
-
-    return Object.values(actionsByType).flatMap(actions => uniqBy(actions, x => x.actionName.toLowerCase()));
   }
 
   return getProviderDefinitions();

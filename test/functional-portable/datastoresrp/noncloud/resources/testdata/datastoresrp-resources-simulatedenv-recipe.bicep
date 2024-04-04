@@ -1,4 +1,4 @@
-provider 'br:shruthikumar.azurecr.io/bicep/radius@1.0.0'
+provider radius
 
 param registry string 
 
@@ -54,7 +54,7 @@ resource webapp 'Applications.Core/containers@2023-10-01-preview' = {
     container: {
       image: magpieimage
       env: {
-        DBCONNECTION: recipedb.connectionString()
+        DBCONNECTION: recipedb.listSecrets().connectionString
       }
       readinessProbe:{
         kind:'httpGet'

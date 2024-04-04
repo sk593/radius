@@ -585,7 +585,8 @@
     "body": {
       "$ref": "#/3"
     },
-    "flags": 0
+    "flags": 0,
+    "functions": {}
   },
   {
     "$type": "StringLiteralType",
@@ -821,7 +822,8 @@
     "body": {
       "$ref": "#/47"
     },
-    "flags": 0
+    "flags": 0,
+    "functions": {}
   },
   {
     "$type": "StringLiteralType",
@@ -1070,6 +1072,7 @@
     "body": {
       "$ref": "#/64"
     },
-    "flags": 0
+    "flags": 0,
+    "functions": {}
   }
 ]

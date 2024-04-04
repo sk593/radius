@@ -3,5 +3,9 @@
         "extensibility": true,
         "providerRegistry": true,
         "dynamicTypeLoading": true
+    },
+    "providers": {
+        "radius": "br:shruthikumar.azurecr.io/bicep/methods:4.0.0",
+        "aws": "br:shruthikumar.azurecr.io/bicep/aws:4.0.0"
     }
 }
