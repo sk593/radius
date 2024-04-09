@@ -1,0 +1,61 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "16857824565305167092"
+    }
+  },
+  "parameters": {
+    "clusterName": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the AKS cluster resource name."
+      }
+    },
+    "clusterLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the AKS cluster resource location."
+      }
+    },
+    "metricLabelsAllowlist": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies comma-separated list of Kubernetes annotation keys that will be used in the resource's labels metric (Example: 'namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...') By default the metric contains only resource name and namespace labels."
+      }
+    },
+    "metricAnnotationsAllowList": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies comma-separated list of Kubernetes annotation keys that will be used in the resource's labels metric (Example: 'namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...') By default the metric contains only resource name and namespace labels."
+      }
+    }
+  },
+  "resources": {
+    "enableMonitorAddon": {
+      "type": "Microsoft.ContainerService/managedClusters",
+      "apiVersion": "2023-05-01",
+      "name": "[parameters('clusterName')]",
+      "location": "[parameters('clusterLocation')]",
+      "properties": {
+        "azureMonitorProfile": {
+          "metrics": {
+            "enabled": true,
+            "kubeStateMetrics": {
+              "metricLabelsAllowlist": "[parameters('metricLabelsAllowlist')]",
+              "metricAnnotationsAllowList": "[parameters('metricAnnotationsAllowList')]"
+            }
+          }
+        }
+      }
+    }
+  }
+}

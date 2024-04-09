@@ -1,0 +1,151 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "13237689741094575155"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "global",
+      "metadata": {
+        "description": "Specifies the location for resources."
+      }
+    },
+    "magpieimage": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the image of the container resource."
+      }
+    },
+    "port": {
+      "type": "int",
+      "defaultValue": 3000,
+      "metadata": {
+        "description": "Specifies the port of the container resource."
+      }
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "methods",
+      "version": "4.0.0"
+    }
+  },
+  "resources": {
+    "env": {
+      "import": "radius",
+      "type": "Applications.Core/environments@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-kmd-cascade-env",
+        "location": "[parameters('location')]",
+        "properties": {
+          "compute": {
+            "kind": "kubernetes",
+            "namespace": "corerp-kmd-cascade-ns"
+          },
+          "extensions": [
+            {
+              "kind": "kubernetesMetadata",
+              "annotations": {
+                "user.env.ann.1": "user.env.ann.val.1",
+                "user.env.ann.2": "user.env.ann.val.2",
+                "radapp.io/env.ann.1": "reserved.ann.val.1",
+                "collision.ann.1": "collision.env.ann.val.1",
+                "collision.env.app.ann.1": "collision.env.ann.val.1"
+              },
+              "labels": {
+                "user.env.lbl.1": "user.env.lbl.val.1",
+                "user.env.lbl.2": "user.env.lbl.val.2",
+                "radapp.io/env.lbl.1": "reserved.lbl.val.1",
+                "collision.lbl.1": "collision.env.lbl.val.1"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-kmd-cascade-app",
+        "location": "[parameters('location')]",
+        "properties": {
+          "environment": "[reference('env').id]",
+          "extensions": [
+            {
+              "kind": "kubernetesMetadata",
+              "annotations": {
+                "user.app.ann.1": "user.app.ann.val.1",
+                "user.app.ann.2": "user.app.ann.val.2",
+                "radapp.io/app.ann.1": "reserved.ann.val.1",
+                "collision.ann.1": "collision.app.ann.val.1",
+                "collision.env.app.ann.1": "collision.app.ann.val.1"
+              },
+              "labels": {
+                "user.app.lbl.1": "user.app.lbl.val.1",
+                "user.app.lbl.2": "user.app.lbl.val.2",
+                "radapp.io/app.lbl.1": "reserved.lbl.val.1",
+                "collision.lbl.1": "collision.app.lbl.val.1",
+                "collision.app.cntr.lbl.1": "collision.app.lbl.val.1"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "env"
+      ]
+    },
+    "container": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-kmd-cascade-ctnr",
+        "location": "[parameters('location')]",
+        "properties": {
+          "application": "[reference('app').id]",
+          "container": {
+            "image": "[parameters('magpieimage')]",
+            "ports": {
+              "web": {
+                "containerPort": "[parameters('port')]"
+              }
+            }
+          },
+          "extensions": [
+            {
+              "kind": "kubernetesMetadata",
+              "annotations": {
+                "user.cntr.ann.1": "user.cntr.ann.val.1",
+                "user.cntr.ann.2": "user.cntr.ann.val.2",
+                "radapp.io/cntr.ann.1": "reserved.ann.val.1",
+                "collision.ann.1": "collision.cntr.ann.val.1"
+              },
+              "labels": {
+                "user.cntr.lbl.1": "user.cntr.lbl.val.1",
+                "user.cntr.lbl.2": "user.cntr.lbl.val.2",
+                "radapp.io/cntr.lbl.1": "reserved.lbl.val.1",
+                "collision.lbl.1": "collision.cntr.lbl.val.1",
+                "collision.app.cntr.lbl.1": "collision.cntr.lbl.val.1"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "app"
+      ]
+    }
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "12717905619131688778"
+    }
+  },
+  "parameters": {
+    "username": {
+      "type": "string",
+      "defaultValue": "admin",
+      "metadata": {
+        "description": "Admin username for the Mongo database. Default is \"admin\""
+      }
+    },
+    "password": {
+      "type": "securestring",
+      "defaultValue": "[newGuid()]",
+      "metadata": {
+        "description": "Admin password for the Mongo database"
+      }
+    },
+    "environment": {
+      "type": "string"
+    },
+    "magpieimage": {
+      "type": "string"
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "methods",
+      "version": "4.0.0"
+    }
+  },
+  "resources": {
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "dsrp-resources-mongodb-manual",
+        "location": "global",
+        "properties": {
+          "environment": "[parameters('environment')]"
+        }
+      }
+    },
+    "webapp": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "mdb-us-app-ctnr",
+        "location": "global",
+        "properties": {
+          "application": "[reference('app').id]",
+          "connections": {
+            "mongodb": {
+              "source": "[reference('mongo').id]"
+            }
+          },
+          "container": {
+            "image": "[parameters('magpieimage')]"
+          }
+        }
+      },
+      "dependsOn": [
+        "app",
+        "mongo"
+      ]
+    },
+    "mongoContainer": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "mdb-us-ctnr",
+        "location": "global",
+        "properties": {
+          "application": "[reference('app').id]",
+          "container": {
+            "image": "mongo:4.2",
+            "env": {
+              "DBCONNECTION": "[invokeResourceMethod('mongo', 'listSecrets', createArray()).connectionString]",
+              "MONGO_INITDB_ROOT_USERNAME": "[parameters('username')]",
+              "MONGO_INITDB_ROOT_PASSWORD": "[parameters('password')]"
+            },
+            "ports": {
+              "mongo": {
+                "containerPort": 27017
+              }
+            }
+          },
+          "connections": {}
+        }
+      },
+      "dependsOn": [
+        "app",
+        "mongo"
+      ]
+    },
+    "mongo": {
+      "import": "radius",
+      "type": "Applications.Datastores/mongoDatabases@2023-10-01-preview",
+      "properties": {
+        "name": "mdb-us-db",
+        "location": "global",
+        "properties": {
+          "application": "[reference('app').id]",
+          "environment": "[parameters('environment')]",
+          "resourceProvisioning": "manual",
+          "host": "mdb-us-ctnr",
+          "port": 27017,
+          "database": "[format('mongodb-{0}', reference('app').name)]",
+          "username": "[parameters('username')]",
+          "secrets": {
+            "connectionString": "[format('mongodb://{0}:{1}@mdb-us-ctnr:27017/mongodb-{2}', parameters('username'), parameters('password'), reference('app').name)]",
+            "password": "[parameters('password')]"
+          }
+        }
+      },
+      "dependsOn": [
+        "app"
+      ]
+    }
+  }
+}

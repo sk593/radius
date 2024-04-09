@@ -1,0 +1,150 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "3225484427270749722"
+    }
+  },
+  "parameters": {
+    "context": {
+      "type": "object"
+    },
+    "username": {
+      "type": "string",
+      "defaultValue": "admin",
+      "metadata": {
+        "description": "Admin username for the Mongo database. Default is \"admin\""
+      }
+    },
+    "password": {
+      "type": "securestring",
+      "defaultValue": "[newGuid()]",
+      "metadata": {
+        "description": "Admin password for the Mongo database"
+      }
+    }
+  },
+  "imports": {
+    "kubernetes": {
+      "provider": "Kubernetes",
+      "version": "1.0.0",
+      "config": {
+        "kubeConfig": "",
+        "namespace": "[parameters('context').runtime.kubernetes.namespace]"
+      }
+    }
+  },
+  "resources": {
+    "mongo": {
+      "import": "kubernetes",
+      "type": "apps/Deployment@v1",
+      "properties": {
+        "metadata": {
+          "name": "mongo-recipe-resource"
+        },
+        "spec": {
+          "selector": {
+            "matchLabels": {
+              "app": "mongo",
+              "resource": "[parameters('context').resource.name]"
+            }
+          },
+          "template": {
+            "metadata": {
+              "labels": {
+                "app": "mongo",
+                "resource": "[parameters('context').resource.name]"
+              }
+            },
+            "spec": {
+              "containers": [
+                {
+                  "name": "mongo",
+                  "image": "mongo:4.2",
+                  "ports": [
+                    {
+                      "containerPort": 27017
+                    }
+                  ],
+                  "env": [
+                    {
+                      "name": "MONGO_INITDB_ROOT_USERNAME",
+                      "value": "[parameters('username')]"
+                    },
+                    {
+                      "name": "MONGO_INITDB_ROOT_PASSWORD",
+                      "value": "[parameters('password')]"
+                    }
+                  ],
+                  "resources": {
+                    "requests": {
+                      "cpu": "600m",
+                      "memory": "1024Mi"
+                    },
+                    "limits": {
+                      "cpu": "900m",
+                      "memory": "1024Mi"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "svc": {
+      "import": "kubernetes",
+      "type": "core/Service@v1",
+      "properties": {
+        "metadata": {
+          "name": "mongo-recipe-svc",
+          "labels": {
+            "name": "mongo-recipe-svc"
+          }
+        },
+        "spec": {
+          "type": "ClusterIP",
+          "selector": {
+            "app": "mongo",
+            "resource": "[parameters('context').resource.name]"
+          },
+          "ports": [
+            {
+              "port": 27017
+            }
+          ]
+        }
+      }
+    }
+  },
+  "outputs": {
+    "result": {
+      "type": "object",
+      "value": {
+        "resources": [
+          "[format('/planes/kubernetes/local/namespaces/{0}/providers/core/Service/{1}', reference('svc').metadata.namespace, reference('svc').metadata.name)]",
+          "[format('/planes/kubernetes/local/namespaces/{0}/providers/apps/Deployment/{1}', reference('mongo').metadata.namespace, reference('mongo').metadata.name)]"
+        ],
+        "values": {
+          "host": "[format('{0}.{1}.svc.cluster.local', reference('svc').metadata.name, reference('svc').metadata.namespace)]",
+          "port": 27017,
+          "database": "[parameters('context').resource.name]"
+        },
+        "secrets": {
+          "connectionString": "[format('mongodb://{0}:{1}@{2}.{3}.svc.cluster.local:27017', parameters('username'), parameters('password'), reference('svc').metadata.name, reference('svc').metadata.namespace)]",
+          "username": "[parameters('username')]",
+          "password": "[parameters('password')]"
+        }
+      }
+    }
+  }
+}

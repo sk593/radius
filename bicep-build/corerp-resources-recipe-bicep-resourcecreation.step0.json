@@ -1,0 +1,123 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "653935147891610945"
+    }
+  },
+  "parameters": {
+    "registry": {
+      "type": "string",
+      "metadata": {
+        "description": "The OCI registry for test Bicep recipes."
+      }
+    },
+    "version": {
+      "type": "string",
+      "metadata": {
+        "description": "The OCI tag for test Bicep recipes."
+      }
+    },
+    "basename": {
+      "type": "string",
+      "metadata": {
+        "description": "The base name of the test, used to qualify resources and namespaces. eg: corerp-resources-terraform-helloworld"
+      }
+    },
+    "recipe": {
+      "type": "string",
+      "metadata": {
+        "description": "The recipe to test. eg: hello-world"
+      }
+    },
+    "environmentRecipeName": {
+      "type": "string",
+      "defaultValue": "default",
+      "metadata": {
+        "description": "The recipe name used to register the recipe. eg: default"
+      }
+    },
+    "environmentParameters": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "The environment parameters to pass to the recipe. eg: {\"message\": \"Hello World\"}"
+      }
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "methods",
+      "version": "4.0.0"
+    }
+  },
+  "resources": {
+    "env": {
+      "import": "radius",
+      "type": "Applications.Core/environments@2023-10-01-preview",
+      "properties": {
+        "name": "[parameters('basename')]",
+        "properties": {
+          "compute": {
+            "kind": "kubernetes",
+            "resourceId": "self",
+            "namespace": "[format('{0}-env', parameters('basename'))]"
+          },
+          "recipes": {
+            "Applications.Core/extenders": {
+              "[format('{0}', parameters('environmentRecipeName'))]": {
+                "templateKind": "bicep",
+                "templatePath": "[format('{0}/test/functional/shared/recipes/{1}:{2}', parameters('registry'), parameters('recipe'), parameters('version'))]",
+                "parameters": "[parameters('environmentParameters')]"
+              }
+            }
+          }
+        }
+      }
+    },
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "[parameters('basename')]",
+        "properties": {
+          "environment": "[reference('env').id]",
+          "extensions": [
+            {
+              "kind": "kubernetesNamespace",
+              "namespace": "[format('{0}-app', parameters('basename'))]"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "env"
+      ]
+    },
+    "extender": {
+      "import": "radius",
+      "type": "Applications.Core/extenders@2023-10-01-preview",
+      "properties": {
+        "name": "[format('{0}-existing', parameters('basename'))]",
+        "properties": {
+          "application": "[reference('app').id]",
+          "environment": "[reference('env').id]",
+          "resourceProvisioning": "manual",
+          "message": "hello from existing resource"
+        }
+      },
+      "dependsOn": [
+        "app",
+        "env"
+      ]
+    }
+  }
+}

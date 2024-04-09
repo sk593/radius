@@ -1,0 +1,117 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "14353058239375671975"
+    }
+  },
+  "parameters": {
+    "bucketName": {
+      "type": "string"
+    },
+    "creationTimestamp": {
+      "type": "string"
+    },
+    "awsAccountId": {
+      "type": "string"
+    },
+    "awsRegion": {
+      "type": "string"
+    },
+    "registry": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "methods",
+      "version": "4.0.0"
+    }
+  },
+  "resources": {
+    "env": {
+      "import": "radius",
+      "type": "Applications.Core/environments@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-resources-extenders-aws-s3-recipe-env",
+        "location": "global",
+        "properties": {
+          "compute": {
+            "kind": "kubernetes",
+            "resourceId": "self",
+            "namespace": "corerp-resources-extenders-aws-s3-recipe-env"
+          },
+          "providers": {
+            "aws": {
+              "scope": "[format('/planes/aws/aws/accounts/{0}/regions/{1}', parameters('awsAccountId'), parameters('awsRegion'))]"
+            }
+          },
+          "recipes": {
+            "Applications.Core/extenders": {
+              "s3": {
+                "templateKind": "bicep",
+                "templatePath": "[format('{0}/test/functional/shared/recipes/extenders-aws-s3-recipe:{1}', parameters('registry'), parameters('version'))]",
+                "parameters": {
+                  "bucketName": "[parameters('bucketName')]"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-resources-extenders-aws-s3-recipe-app",
+        "location": "global",
+        "properties": {
+          "environment": "[reference('env').id]",
+          "extensions": [
+            {
+              "kind": "kubernetesNamespace",
+              "namespace": "corerp-resources-extenders-aws-s3-recipe-app"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "env"
+      ]
+    },
+    "extender": {
+      "import": "radius",
+      "type": "Applications.Core/extenders@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-resources-extenders-aws-s3-recipe",
+        "properties": {
+          "environment": "[reference('env').id]",
+          "application": "[reference('app').id]",
+          "recipe": {
+            "name": "s3",
+            "parameters": {
+              "creationTimestamp": "[parameters('creationTimestamp')]",
+              "bucketName": "[parameters('bucketName')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "app",
+        "env"
+      ]
+    }
+  }
+}

@@ -1,0 +1,169 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "18387777512479010674"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "local",
+      "metadata": {
+        "description": "Specifies the location for resources."
+      }
+    },
+    "environment": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the environment for resources."
+      }
+    },
+    "port": {
+      "type": "int",
+      "defaultValue": 3000,
+      "metadata": {
+        "description": "Specifies the port for the container resource."
+      }
+    },
+    "magpieimage": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the image for the container resource."
+      }
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "methods",
+      "version": "4.0.0"
+    }
+  },
+  "resources": {
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-resources-gateway-kme",
+        "location": "[parameters('location')]",
+        "properties": {
+          "environment": "[parameters('environment')]",
+          "extensions": [
+            {
+              "kind": "kubernetesMetadata",
+              "annotations": {
+                "user.ann.1": "user.ann.val.1",
+                "user.ann.2": "user.ann.val.2"
+              },
+              "labels": {
+                "user.lbl.1": "user.lbl.val.1",
+                "user.lbl.2": "user.lbl.val.2"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "gateway": {
+      "import": "radius",
+      "type": "Applications.Core/gateways@2023-10-01-preview",
+      "properties": {
+        "name": "http-gtwy-kme",
+        "location": "[parameters('location')]",
+        "properties": {
+          "application": "[reference('app').id]",
+          "routes": [
+            {
+              "path": "/",
+              "destination": "http://http-gtwy-front-ctnr-kme:81"
+            },
+            {
+              "path": "/backend1",
+              "destination": "http://http-gtwy-back-ctnr-kme:3000"
+            },
+            {
+              "path": "/backend2",
+              "destination": "http://http-gtwy-back-ctnr-kme:3000",
+              "replacePrefix": "/"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "app"
+      ]
+    },
+    "frontendContainer": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "http-gtwy-front-ctnr-kme",
+        "location": "[parameters('location')]",
+        "properties": {
+          "application": "[reference('app').id]",
+          "container": {
+            "image": "[parameters('magpieimage')]",
+            "ports": {
+              "web": {
+                "containerPort": "[parameters('port')]",
+                "port": 81
+              }
+            },
+            "readinessProbe": {
+              "kind": "httpGet",
+              "containerPort": "[parameters('port')]",
+              "path": "/healthz"
+            }
+          },
+          "connections": {
+            "backend": {
+              "source": "http://http-gtwy-back-ctnr-kme:3000"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "app"
+      ]
+    },
+    "backendContainer": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "http-gtwy-back-ctnr-kme",
+        "location": "[parameters('location')]",
+        "properties": {
+          "application": "[reference('app').id]",
+          "container": {
+            "image": "[parameters('magpieimage')]",
+            "env": {
+              "gatewayUrl": "[reference('gateway').properties.url]"
+            },
+            "ports": {
+              "web": {
+                "containerPort": "[parameters('port')]"
+              }
+            },
+            "readinessProbe": {
+              "kind": "httpGet",
+              "containerPort": "[parameters('port')]",
+              "path": "/healthz"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "app",
+        "gateway"
+      ]
+    }
+  }
+}

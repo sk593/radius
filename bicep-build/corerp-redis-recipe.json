@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "13637666086794256129"
+    }
+  },
+  "parameters": {
+    "redisName": {
+      "type": "string"
+    }
+  },
+  "resources": {
+    "redis": {
+      "type": "Microsoft.Cache/redis",
+      "apiVersion": "2022-06-01",
+      "name": "[format('rds-{0}', uniqueString(resourceGroup().id, parameters('redisName'), deployment().name))]",
+      "location": "global",
+      "properties": {
+        "enableNonSslPort": false,
+        "minimumTlsVersion": "1.2",
+        "sku": {
+          "family": "C",
+          "capacity": 1,
+          "name": "Basic"
+        }
+      }
+    }
+  },
+  "outputs": {
+    "result": {
+      "type": "object",
+      "value": {
+        "values": {
+          "host": "[reference('redis').hostName]",
+          "port": "[reference('redis').port]"
+        },
+        "secrets": {
+          "connectionString": "[format('redis://{0}:{1}', reference('redis').hostName, reference('redis').port)]",
+          "password": "[listKeys(resourceId('Microsoft.Cache/redis', format('rds-{0}', uniqueString(resourceGroup().id, parameters('redisName'), deployment().name))), '2022-06-01').primaryKey]"
+        }
+      }
+    }
+  }
+}

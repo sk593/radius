@@ -1,0 +1,185 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "821571747857343533"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the SQL username."
+      }
+    },
+    "adminPassword": {
+      "type": "securestring"
+    }
+  },
+  "resources": {
+    "account::dbinner": {
+      "type": "Microsoft.DocumentDB/databaseAccounts/mongodbDatabases",
+      "apiVersion": "2020-04-01",
+      "name": "[format('{0}/{1}', 'account-radiustest', 'mongodb-radiustest')]",
+      "properties": {
+        "resource": {
+          "id": "mongodb-radiustest"
+        },
+        "options": {
+          "throughput": 400
+        }
+      },
+      "dependsOn": [
+        "account"
+      ]
+    },
+    "storageAccount::tableServices::table": {
+      "type": "Microsoft.Storage/storageAccounts/tableServices/tables",
+      "apiVersion": "2021-09-01",
+      "name": "[format('{0}/{1}/{2}', 'tsaccountradiustest', 'default', 'radiustest')]",
+      "dependsOn": [
+        "storageAccount::tableServices"
+      ]
+    },
+    "storageAccount::tableServices": {
+      "type": "Microsoft.Storage/storageAccounts/tableServices",
+      "apiVersion": "2021-09-01",
+      "name": "[format('{0}/{1}', 'tsaccountradiustest', 'default')]",
+      "dependsOn": [
+        "storageAccount"
+      ]
+    },
+    "server::db": {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2021-02-01-preview",
+      "name": "[format('{0}/{1}', 'mssql-radiustest', 'database-radiustest')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "server"
+      ]
+    },
+    "server::firewall": {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2021-02-01-preview",
+      "name": "[format('{0}/{1}', 'mssql-radiustest', 'allow')]",
+      "properties": {
+        "startIpAddress": "0.0.0.0",
+        "endIpAddress": "0.0.0.0"
+      },
+      "dependsOn": [
+        "server"
+      ]
+    },
+    "account": {
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "apiVersion": "2020-04-01",
+      "name": "account-radiustest",
+      "location": "[parameters('location')]",
+      "kind": "MongoDB",
+      "tags": {
+        "radiustest": "corerp-resources-mongodb"
+      },
+      "properties": {
+        "consistencyPolicy": {
+          "defaultConsistencyLevel": "Session"
+        },
+        "locations": [
+          {
+            "locationName": "[parameters('location')]",
+            "failoverPriority": 0,
+            "isZoneRedundant": false
+          }
+        ],
+        "databaseAccountOfferType": "Standard"
+      }
+    },
+    "namespace": {
+      "type": "Microsoft.ServiceBus/namespaces",
+      "apiVersion": "2017-04-01",
+      "name": "daprns-radiustest",
+      "location": "[parameters('location')]",
+      "tags": {
+        "radiustest": "corerp-resources-dapr-pubsub-servicebus"
+      }
+    },
+    "storageAccount": {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2021-09-01",
+      "name": "tsaccountradiustest",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "accessTier": "Hot"
+      }
+    },
+    "server": {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2021-02-01-preview",
+      "name": "mssql-radiustest",
+      "location": "[parameters('location')]",
+      "tags": {
+        "radiustest": "corerp-resources-microsoft-sql"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('adminUsername')]",
+        "administratorLoginPassword": "[parameters('adminPassword')]"
+      }
+    },
+    "redisCache": {
+      "type": "Microsoft.Cache/redis",
+      "apiVersion": "2020-12-01",
+      "name": "redis-radiustest",
+      "location": "[parameters('location')]",
+      "properties": {
+        "enableNonSslPort": false,
+        "minimumTlsVersion": "1.2",
+        "sku": {
+          "family": "C",
+          "capacity": 1,
+          "name": "Basic"
+        }
+      }
+    }
+  },
+  "outputs": {
+    "redisCacheId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Cache/redis', 'redis-radiustest')]"
+    },
+    "sqlServerId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Sql/servers/databases', 'mssql-radiustest', 'database-radiustest')]"
+    },
+    "tableStorageAccId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Storage/storageAccounts/tableServices/tables', 'tsaccountradiustest', 'default', 'radiustest')]"
+    },
+    "namespaceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ServiceBus/namespaces', 'daprns-radiustest')]"
+    },
+    "mongoDatabaseId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.DocumentDB/databaseAccounts/mongodbDatabases', 'account-radiustest', 'mongodb-radiustest')]"
+    },
+    "cosmosMongoAccountID": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.DocumentDB/databaseAccounts', 'account-radiustest')]"
+    }
+  }
+}

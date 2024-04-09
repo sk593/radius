@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "14275978124309271034"
+    }
+  },
+  "parameters": {
+    "context": {
+      "type": "object"
+    },
+    "a": {
+      "type": "string"
+    },
+    "b": {
+      "type": "string",
+      "defaultValue": "default value"
+    },
+    "c": {
+      "type": "int"
+    },
+    "d": {
+      "type": "string",
+      "defaultValue": "default value"
+    }
+  },
+  "resources": {},
+  "outputs": {
+    "result": {
+      "type": "object",
+      "value": {
+        "values": {
+          "a": "[parameters('a')]",
+          "b": "[parameters('b')]",
+          "c": "[parameters('c')]",
+          "d": "[parameters('d')]"
+        },
+        "secrets": {
+          "e": "so secret"
+        }
+      }
+    }
+  }
+}

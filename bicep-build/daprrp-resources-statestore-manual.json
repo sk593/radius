@@ -1,0 +1,254 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "11844036460597249279"
+    }
+  },
+  "parameters": {
+    "magpieimage": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string"
+    },
+    "namespace": {
+      "type": "string",
+      "defaultValue": "default"
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "methods",
+      "version": "4.0.0"
+    }
+  },
+  "resources": {
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "daprrp-rs-statestore-manual",
+        "properties": {
+          "environment": "[parameters('environment')]"
+        }
+      }
+    },
+    "myapp": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "dapr-sts-manual-ctnr",
+        "properties": {
+          "application": "[reference('app').id]",
+          "connections": {
+            "daprstatestore": {
+              "source": "[reference('statestore').id]"
+            }
+          },
+          "container": {
+            "image": "[parameters('magpieimage')]",
+            "readinessProbe": {
+              "kind": "httpGet",
+              "containerPort": 3000,
+              "path": "/healthz"
+            }
+          },
+          "extensions": [
+            {
+              "kind": "daprSidecar",
+              "appId": "gnrc-sts-ctnr",
+              "appPort": 3000
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "app",
+        "statestore"
+      ]
+    },
+    "statestore": {
+      "import": "radius",
+      "type": "Applications.Dapr/stateStores@2023-10-01-preview",
+      "properties": {
+        "name": "dapr-sts-manual",
+        "properties": {
+          "application": "[reference('app').id]",
+          "environment": "[parameters('environment')]",
+          "resourceProvisioning": "manual",
+          "type": "state.redis",
+          "metadata": {
+            "redisHost": "[format('{0}:{1}', reference('redis').outputs.host.value, reference('redis').outputs.port.value)]",
+            "redisPassword": ""
+          },
+          "version": "v1"
+        }
+      },
+      "dependsOn": [
+        "app",
+        "redis"
+      ]
+    },
+    "redis": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "dapr-sts-manual-redis-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "dapr-sts-manual-redis"
+          },
+          "namespace": {
+            "value": "[parameters('namespace')]"
+          },
+          "application": {
+            "value": "[reference('app').name]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.1-experimental",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+            "_EXPERIMENTAL_FEATURES_ENABLED": [
+              "Extensibility"
+            ],
+            "_generator": {
+              "name": "bicep",
+              "version": "0.26.54.24096",
+              "templateHash": "7563723577026727627"
+            }
+          },
+          "parameters": {
+            "namespace": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "application": {
+              "type": "string",
+              "defaultValue": ""
+            }
+          },
+          "imports": {
+            "kubernetes": {
+              "provider": "Kubernetes",
+              "version": "1.0.0",
+              "config": {
+                "kubeConfig": "",
+                "namespace": "[parameters('namespace')]"
+              }
+            }
+          },
+          "resources": {
+            "redis": {
+              "import": "kubernetes",
+              "type": "apps/Deployment@v1",
+              "properties": {
+                "metadata": {
+                  "name": "[parameters('name')]"
+                },
+                "spec": {
+                  "selector": {
+                    "matchLabels": {
+                      "app": "redis",
+                      "resource": "[parameters('name')]"
+                    }
+                  },
+                  "template": {
+                    "metadata": {
+                      "labels": {
+                        "app": "redis",
+                        "resource": "[parameters('name')]",
+                        "radapp.io/application": "[if(equals(parameters('application'), ''), '', parameters('application'))]"
+                      }
+                    },
+                    "spec": {
+                      "containers": [
+                        {
+                          "name": "redis",
+                          "image": "redis",
+                          "ports": [
+                            {
+                              "containerPort": 6379
+                            }
+                          ]
+                        },
+                        {
+                          "name": "redis-monitor",
+                          "image": "redis",
+                          "args": [
+                            "redis-cli",
+                            "-h",
+                            "localhost",
+                            "MONITOR"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "svc": {
+              "import": "kubernetes",
+              "type": "core/Service@v1",
+              "properties": {
+                "metadata": {
+                  "name": "[parameters('name')]"
+                },
+                "spec": {
+                  "type": "ClusterIP",
+                  "selector": {
+                    "app": "redis",
+                    "resource": "[parameters('name')]"
+                  },
+                  "ports": [
+                    {
+                      "port": 6379
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "outputs": {
+            "resources": {
+              "type": "array",
+              "value": [
+                "[format('/planes/kubernetes/local/namespaces/{0}/providers/core/Service/{1}', reference('svc').metadata.namespace, reference('svc').metadata.name)]",
+                "[format('/planes/kubernetes/local/namespaces/{0}/providers/apps/Deployment/{1}', reference('redis').metadata.namespace, reference('redis').metadata.name)]"
+              ]
+            },
+            "host": {
+              "type": "string",
+              "value": "[format('{0}.{1}.svc.cluster.local', reference('svc').metadata.name, reference('svc').metadata.namespace)]"
+            },
+            "port": {
+              "type": "int",
+              "value": 6379
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "app"
+      ]
+    }
+  }
+}

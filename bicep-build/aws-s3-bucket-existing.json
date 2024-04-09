@@ -1,0 +1,46 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "15462302639510789792"
+    }
+  },
+  "parameters": {
+    "bucketName": {
+      "type": "string"
+    }
+  },
+  "imports": {
+    "aws": {
+      "provider": "aws",
+      "version": "4.0.0"
+    }
+  },
+  "resources": {
+    "bucket": {
+      "existing": true,
+      "import": "aws",
+      "type": "AWS.S3/Bucket@default",
+      "properties": {
+        "alias": "[parameters('bucketName')]",
+        "properties": {
+          "BucketName": "[parameters('bucketName')]"
+        }
+      }
+    }
+  },
+  "outputs": {
+    "var": {
+      "type": "string",
+      "value": "[reference('bucket').properties.BucketName]"
+    }
+  }
+}

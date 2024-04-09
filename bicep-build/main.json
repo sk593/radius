@@ -1,0 +1,2595 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "11720654665995966768"
+    }
+  },
+  "parameters": {
+    "prefix": {
+      "type": "string",
+      "defaultValue": "[uniqueString(resourceGroup().id)]",
+      "metadata": {
+        "description": "Specifies the prefix for resource names deployed in this template."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Specifies the location where to deploy the resources. Default is the resource group location."
+      }
+    },
+    "logAnalyticsWorkspaceName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-workspace', parameters('prefix'))]",
+      "metadata": {
+        "description": "Specifies the name of log analytics workspace. Default is {prefix}-workspace."
+      }
+    },
+    "logAnalyticsWorkspaceLocation": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Specifies the location of log analytics workspace. Default is the resource group location."
+      }
+    },
+    "azureMonitorWorkspaceName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-azm-workspace', parameters('prefix'))]",
+      "metadata": {
+        "description": "Specifies the location of azure monitor workspace. Default is {prefix}-azm-workspace."
+      }
+    },
+    "azureMonitorWorkspaceLocation": {
+      "type": "string",
+      "defaultValue": "westus2",
+      "allowedValues": [
+        "eastus2euap",
+        "centraluseuap",
+        "centralus",
+        "eastus",
+        "eastus2",
+        "northeurope",
+        "southcentralus",
+        "southeastasia",
+        "uksouth",
+        "westeurope",
+        "westus",
+        "westus2"
+      ],
+      "metadata": {
+        "description": "Specifies the location of azure monitor workspace. Default is westus2"
+      }
+    },
+    "aksClusterName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-aks', parameters('prefix'))]",
+      "metadata": {
+        "description": "Specifies the name of aks cluster. Default is {prefix}-aks."
+      }
+    },
+    "grafanaEnabled": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Enables Azure Monitoring and Grafana Dashboard. Default is false."
+      }
+    },
+    "grafanaAdminObjectId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Specifies the object id to assign Grafana administrator role. Can be the object id of AzureAD user or group."
+      }
+    },
+    "grafanaDashboardName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-dashboard', parameters('prefix'))]",
+      "metadata": {
+        "description": "Specifies the name of Grafana dashboard. Default is {prefix}-dashboard."
+      }
+    },
+    "installKubernetesDependencies": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Specifies whether to install the required tools for running Radius. Default is true."
+      }
+    },
+    "defaultTags": {
+      "type": "object",
+      "defaultValue": {
+        "radius": "infra"
+      }
+    }
+  },
+  "resources": {
+    "azureMonitorWorkspace": {
+      "type": "Microsoft.Monitor/accounts",
+      "apiVersion": "2023-04-03",
+      "name": "[parameters('azureMonitorWorkspaceName')]",
+      "location": "[parameters('azureMonitorWorkspaceLocation')]",
+      "properties": {}
+    },
+    "aks": {
+      "existing": true,
+      "type": "Microsoft.ContainerService/managedClusters",
+      "apiVersion": "2023-05-01",
+      "name": "[parameters('aksClusterName')]",
+      "dependsOn": [
+        "aksCluster"
+      ]
+    },
+    "logAnalyticsWorkspace": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[parameters('logAnalyticsWorkspaceName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[parameters('logAnalyticsWorkspaceName')]"
+          },
+          "location": {
+            "value": "[parameters('logAnalyticsWorkspaceLocation')]"
+          },
+          "sku": {
+            "value": "PerGB2018"
+          },
+          "retentionInDays": {
+            "value": 30
+          },
+          "tags": {
+            "value": "[parameters('defaultTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.1-experimental",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+            "_EXPERIMENTAL_FEATURES_ENABLED": [
+              "Extensibility"
+            ],
+            "_generator": {
+              "name": "bicep",
+              "version": "0.26.54.24096",
+              "templateHash": "17439613475900136168"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the name of the Log Analytics workspace."
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "PerNode",
+              "allowedValues": [
+                "Free",
+                "Standalone",
+                "PerNode",
+                "PerGB2018"
+              ],
+              "metadata": {
+                "description": "Specifies the service tier of the workspace: Free, Standalone, PerNode, Per-GB."
+              }
+            },
+            "retentionInDays": {
+              "type": "int",
+              "defaultValue": 30,
+              "metadata": {
+                "description": "Specifies the workspace data retention in days. -1 means Unlimited retention for the Unlimited Sku. 730 days is the maximum allowed for all other Skus."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Specifies the location."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {
+                "radapp.io": "radius-infra"
+              },
+              "metadata": {
+                "description": "Specifies the resource tags."
+              }
+            }
+          },
+          "resources": {
+            "logAnalyticsWorkspace": {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2021-12-01-preview",
+              "name": "[parameters('name')]",
+              "tags": "[parameters('tags')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "sku": {
+                  "name": "[parameters('sku')]"
+                },
+                "retentionInDays": "[parameters('retentionInDays')]"
+              }
+            }
+          },
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "location": {
+              "type": "string",
+              "value": "[reference('logAnalyticsWorkspace', '2021-12-01-preview', 'full').location]"
+            },
+            "customerId": {
+              "type": "string",
+              "value": "[reference('logAnalyticsWorkspace').customerId]"
+            }
+          }
+        }
+      }
+    },
+    "aksCluster": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[parameters('aksClusterName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[parameters('aksClusterName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "kubernetesVersion": {
+            "value": "1.28.3"
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": "[reference('logAnalyticsWorkspace').outputs.id.value]"
+          },
+          "systemAgentPoolName": {
+            "value": "agentpool"
+          },
+          "systemAgentPoolVmSize": {
+            "value": "Standard_D4as_v5"
+          },
+          "systemAgentPoolAvailabilityZones": {
+            "value": []
+          },
+          "systemAgentPoolOsDiskType": {
+            "value": "Managed"
+          },
+          "systemAgentPoolOsSKU": {
+            "value": "AzureLinux"
+          },
+          "userAgentPoolName": {
+            "value": "userpool"
+          },
+          "userAgentPoolVmSize": {
+            "value": "Standard_D4as_v5"
+          },
+          "userAgentPoolAvailabilityZones": {
+            "value": []
+          },
+          "userAgentPoolOsDiskType": {
+            "value": "Managed"
+          },
+          "userAgentPoolOsSKU": {
+            "value": "AzureLinux"
+          },
+          "daprEnabled": {
+            "value": true
+          },
+          "daprHaEnabled": {
+            "value": false
+          },
+          "oidcIssuerProfileEnabled": {
+            "value": true
+          },
+          "workloadIdentityEnabled": {
+            "value": true
+          },
+          "imageCleanerEnabled": {
+            "value": true
+          },
+          "imageCleanerIntervalHours": {
+            "value": 24
+          },
+          "tags": {
+            "value": "[parameters('defaultTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.1-experimental",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+            "_EXPERIMENTAL_FEATURES_ENABLED": [
+              "Extensibility"
+            ],
+            "_generator": {
+              "name": "bicep",
+              "version": "0.26.54.24096",
+              "templateHash": "16348750070229399468"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "defaultValue": "[format('aks-{0}', uniqueString(resourceGroup().id))]",
+              "metadata": {
+                "description": "Specifies the name of the AKS cluster."
+              }
+            },
+            "dnsPrefix": {
+              "type": "string",
+              "defaultValue": "[parameters('name')]",
+              "metadata": {
+                "description": "Specifies the DNS prefix specified when creating the managed cluster."
+              }
+            },
+            "networkPlugin": {
+              "type": "string",
+              "defaultValue": "azure",
+              "allowedValues": [
+                "azure",
+                "kubenet"
+              ],
+              "metadata": {
+                "description": "Specifies the network plugin used for building Kubernetes network. - azure or kubenet."
+              }
+            },
+            "networkPluginMode": {
+              "type": "string",
+              "defaultValue": "",
+              "allowedValues": [
+                "",
+                "Overlay"
+              ],
+              "metadata": {
+                "description": "Specifies the Network plugin mode used for building the Kubernetes network."
+              }
+            },
+            "networkPolicy": {
+              "type": "string",
+              "defaultValue": "azure",
+              "allowedValues": [
+                "azure",
+                "calico"
+              ],
+              "metadata": {
+                "description": "Specifies the network policy used for building Kubernetes network. - calico or azure"
+              }
+            },
+            "podCidr": {
+              "type": "string",
+              "defaultValue": "192.168.0.0/16",
+              "metadata": {
+                "description": "Specifies the CIDR notation IP range from which to assign pod IPs when kubenet is used."
+              }
+            },
+            "serviceCidr": {
+              "type": "string",
+              "defaultValue": "172.16.0.0/16",
+              "metadata": {
+                "description": "A CIDR notation IP range from which to assign service cluster IPs. It must not overlap with any Subnet IP ranges."
+              }
+            },
+            "dnsServiceIP": {
+              "type": "string",
+              "defaultValue": "172.16.0.10",
+              "metadata": {
+                "description": "Specifies the IP address assigned to the Kubernetes DNS service. It must be within the Kubernetes service address range specified in serviceCidr."
+              }
+            },
+            "loadBalancerSku": {
+              "type": "string",
+              "defaultValue": "standard",
+              "allowedValues": [
+                "basic",
+                "standard"
+              ],
+              "metadata": {
+                "description": "Specifies the sku of the load balancer used by the virtual machine scale sets used by nodepools."
+              }
+            },
+            "outboundType": {
+              "type": "string",
+              "defaultValue": "loadBalancer",
+              "allowedValues": [
+                "loadBalancer",
+                "managedNATGateway",
+                "userAssignedNATGateway",
+                "userDefinedRouting"
+              ],
+              "metadata": {
+                "description": "Specifies outbound (egress) routing method. - loadBalancer or userDefinedRouting."
+              }
+            },
+            "skuTier": {
+              "type": "string",
+              "defaultValue": "Standard",
+              "allowedValues": [
+                "Standard",
+                "Free"
+              ],
+              "metadata": {
+                "description": "Specifies the tier of a managed cluster SKU: Paid or Free"
+              }
+            },
+            "kubernetesVersion": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the version of Kubernetes specified when creating the managed cluster."
+              }
+            },
+            "upgradeChannel": {
+              "type": "string",
+              "defaultValue": "patch",
+              "allowedValues": [
+                "rapid",
+                "stable",
+                "patch",
+                "node-image",
+                "none"
+              ],
+              "metadata": {
+                "description": "Specifies the upgrade channel for auto upgrade. Allowed values include rapid, stable, patch, node-image, none."
+              }
+            },
+            "systemAgentPoolName": {
+              "type": "string",
+              "defaultValue": "agentpool",
+              "metadata": {
+                "description": "Specifies the unique name of of the system node pool profile in the context of the subscription and resource group."
+              }
+            },
+            "systemAgentPoolVmSize": {
+              "type": "string",
+              "defaultValue": "Standard_D4as_v5",
+              "metadata": {
+                "description": "Specifies the vm size of nodes in the system node pool."
+              }
+            },
+            "systemAgentPoolOsDiskSizeGB": {
+              "type": "int",
+              "defaultValue": 0,
+              "metadata": {
+                "description": "Specifies the OS Disk Size in GB to be used to specify the disk size for every machine in the system agent pool. If you specify 0, it will apply the default osDisk size according to the vmSize specified."
+              }
+            },
+            "systemAgentPoolOsDiskType": {
+              "type": "string",
+              "defaultValue": "Managed",
+              "allowedValues": [
+                "Ephemeral",
+                "Managed"
+              ],
+              "metadata": {
+                "description": "Specifies the OS disk type to be used for machines in a given agent pool. Allowed values are 'Ephemeral' and 'Managed'. If unspecified, defaults to 'Ephemeral' when the VM supports ephemeral OS and has a cache disk larger than the requested OSDiskSizeGB. Otherwise, defaults to 'Managed'. May not be changed after creation. - Managed or Ephemeral"
+              }
+            },
+            "systemAgentPoolAgentCount": {
+              "type": "int",
+              "defaultValue": 2,
+              "metadata": {
+                "description": "Specifies the number of agents (VMs) to host docker containers in the system node pool. Allowed values must be in the range of 1 to 100 (inclusive). The default value is 2."
+              }
+            },
+            "systemAgentPoolOsType": {
+              "type": "string",
+              "defaultValue": "Linux",
+              "allowedValues": [
+                "Linux",
+                "Windows"
+              ],
+              "metadata": {
+                "description": "Specifies the OS type for the vms in the system node pool. Choose from Linux and Windows. Default to Linux."
+              }
+            },
+            "systemAgentPoolOsSKU": {
+              "type": "string",
+              "defaultValue": "AzureLinux",
+              "allowedValues": [
+                "AzureLinux",
+                "Ubuntu"
+              ],
+              "metadata": {
+                "description": "Specifies the OS SKU type for the vms in the system node pool. Choose from AzureLinux and Ubuntu. Default to AzureLinux."
+              }
+            },
+            "systemAgentPoolMaxPods": {
+              "type": "int",
+              "defaultValue": 30,
+              "metadata": {
+                "description": "Specifies the maximum number of pods that can run on a node in the system node pool. The maximum number of pods per node in an AKS cluster is 250. The default maximum number of pods per node varies between kubenet and Azure CNI networking, and the method of cluster deployment."
+              }
+            },
+            "systemAgentPoolMaxCount": {
+              "type": "int",
+              "defaultValue": 5,
+              "metadata": {
+                "description": "Specifies the maximum number of nodes for auto-scaling for the system node pool."
+              }
+            },
+            "systemAgentPoolMinCount": {
+              "type": "int",
+              "defaultValue": 2,
+              "metadata": {
+                "description": "Specifies the minimum number of nodes for auto-scaling for the system node pool."
+              }
+            },
+            "systemAgentPoolEnableAutoScaling": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Specifies whether to enable auto-scaling for the system node pool."
+              }
+            },
+            "systemAgentPoolScaleSetPriority": {
+              "type": "string",
+              "defaultValue": "Regular",
+              "allowedValues": [
+                "Spot",
+                "Regular"
+              ],
+              "metadata": {
+                "description": "Specifies the virtual machine scale set priority in the system node pool: Spot or Regular."
+              }
+            },
+            "systemAgentPoolScaleSetEvictionPolicy": {
+              "type": "string",
+              "defaultValue": "Delete",
+              "allowedValues": [
+                "Delete",
+                "Deallocate"
+              ],
+              "metadata": {
+                "description": "Specifies the ScaleSetEvictionPolicy to be used to specify eviction policy for spot virtual machine scale set. Default to Delete. Allowed values are Delete or Deallocate."
+              }
+            },
+            "systemAgentPoolNodeLabels": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Specifies the Agent pool node labels to be persisted across all nodes in the system node pool."
+              }
+            },
+            "systemAgentPoolNodeTaints": {
+              "type": "array",
+              "defaultValue": [
+                "CriticalAddonsOnly=true:NoSchedule"
+              ],
+              "metadata": {
+                "description": "Specifies the taints added to new nodes during node pool create and scale. For example, key=value:NoSchedule."
+              }
+            },
+            "systemAgentPoolKubeletDiskType": {
+              "type": "string",
+              "defaultValue": "OS",
+              "allowedValues": [
+                "OS",
+                "Temporary"
+              ],
+              "metadata": {
+                "description": "Determines the placement of emptyDir volumes, container runtime data root, and Kubelet ephemeral storage."
+              }
+            },
+            "systemAgentPoolType": {
+              "type": "string",
+              "defaultValue": "VirtualMachineScaleSets",
+              "allowedValues": [
+                "VirtualMachineScaleSets",
+                "AvailabilitySet"
+              ],
+              "metadata": {
+                "description": "Specifies the type for the system node pool: VirtualMachineScaleSets or AvailabilitySet"
+              }
+            },
+            "systemAgentPoolAvailabilityZones": {
+              "type": "array",
+              "defaultValue": [
+                "1",
+                "2",
+                "3"
+              ],
+              "metadata": {
+                "description": "Specifies the availability zones for the agent nodes in the system node pool. Requirese the use of VirtualMachineScaleSets as node pool type."
+              }
+            },
+            "userAgentPoolName": {
+              "type": "string",
+              "defaultValue": "userpool",
+              "metadata": {
+                "description": "Specifies the unique name of of the user node pool profile in the context of the subscription and resource group."
+              }
+            },
+            "userAgentPoolVmSize": {
+              "type": "string",
+              "defaultValue": "Standard_D4as_v5",
+              "metadata": {
+                "description": "Specifies the vm size of nodes in the user node pool."
+              }
+            },
+            "userAgentPoolOsDiskSizeGB": {
+              "type": "int",
+              "defaultValue": 0,
+              "metadata": {
+                "description": "Specifies the OS Disk Size in GB to be used to specify the disk size for every machine in the system agent pool. If you specify 0, it will apply the default osDisk size according to the vmSize specified.."
+              }
+            },
+            "userAgentPoolOsDiskType": {
+              "type": "string",
+              "defaultValue": "Managed",
+              "allowedValues": [
+                "Ephemeral",
+                "Managed"
+              ],
+              "metadata": {
+                "description": "Specifies the OS disk type to be used for machines in a given agent pool. Allowed values are 'Ephemeral' and 'Managed'. If unspecified, defaults to 'Ephemeral' when the VM supports ephemeral OS and has a cache disk larger than the requested OSDiskSizeGB. Otherwise, defaults to 'Managed'. May not be changed after creation. - Managed or Ephemeral"
+              }
+            },
+            "userAgentPoolAgentCount": {
+              "type": "int",
+              "defaultValue": 2,
+              "metadata": {
+                "description": "Specifies the number of agents (VMs) to host docker containers in the user node pool. Allowed values must be in the range of 1 to 100 (inclusive). The default value is 1."
+              }
+            },
+            "userAgentPoolOsType": {
+              "type": "string",
+              "defaultValue": "Linux",
+              "allowedValues": [
+                "Linux",
+                "Windows"
+              ],
+              "metadata": {
+                "description": "Specifies the OS type for the vms in the user node pool. Choose from Linux and Windows. Default to Linux."
+              }
+            },
+            "userAgentPoolOsSKU": {
+              "type": "string",
+              "defaultValue": "AzureLinux",
+              "allowedValues": [
+                "AzureLinux",
+                "Ubuntu"
+              ],
+              "metadata": {
+                "description": "Specifies the OS SKU type for the vms in the user node pool. Choose from AzureLinux and Ubuntu. Default to AzureLinux."
+              }
+            },
+            "userAgentPoolMaxPods": {
+              "type": "int",
+              "defaultValue": 30,
+              "metadata": {
+                "description": "Specifies the maximum number of pods that can run on a node in the user node pool. The maximum number of pods per node in an AKS cluster is 250. The default maximum number of pods per node varies between kubenet and Azure CNI networking, and the method of cluster deployment."
+              }
+            },
+            "userAgentPoolMaxCount": {
+              "type": "int",
+              "defaultValue": 5,
+              "metadata": {
+                "description": "Specifies the maximum number of nodes for auto-scaling for the user node pool."
+              }
+            },
+            "userAgentPoolMinCount": {
+              "type": "int",
+              "defaultValue": 2,
+              "metadata": {
+                "description": "Specifies the minimum number of nodes for auto-scaling for the user node pool."
+              }
+            },
+            "userAgentPoolEnableAutoScaling": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Specifies whether to enable auto-scaling for the user node pool."
+              }
+            },
+            "userAgentPoolScaleSetPriority": {
+              "type": "string",
+              "defaultValue": "Regular",
+              "allowedValues": [
+                "Spot",
+                "Regular"
+              ],
+              "metadata": {
+                "description": "Specifies the virtual machine scale set priority in the user node pool: Spot or Regular."
+              }
+            },
+            "userAgentPoolScaleSetEvictionPolicy": {
+              "type": "string",
+              "defaultValue": "Delete",
+              "allowedValues": [
+                "Delete",
+                "Deallocate"
+              ],
+              "metadata": {
+                "description": "Specifies the ScaleSetEvictionPolicy to be used to specify eviction policy for spot virtual machine scale set. Default to Delete. Allowed values are Delete or Deallocate."
+              }
+            },
+            "userAgentPoolNodeLabels": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Specifies the Agent pool node labels to be persisted across all nodes in the user node pool."
+              }
+            },
+            "userAgentPoolNodeTaints": {
+              "type": "array",
+              "defaultValue": [],
+              "allowedValues": [
+                "OS",
+                "Temporary"
+              ],
+              "metadata": {
+                "description": "Specifies the taints added to new nodes during node pool create and scale. For example, key=value:NoSchedule."
+              }
+            },
+            "userAgentPoolKubeletDiskType": {
+              "type": "string",
+              "defaultValue": "OS",
+              "metadata": {
+                "description": "Determines the placement of emptyDir volumes, container runtime data root, and Kubelet ephemeral storage."
+              }
+            },
+            "userAgentPoolType": {
+              "type": "string",
+              "defaultValue": "VirtualMachineScaleSets",
+              "allowedValues": [
+                "VirtualMachineScaleSets",
+                "AvailabilitySet"
+              ],
+              "metadata": {
+                "description": "Specifies the type for the user node pool: VirtualMachineScaleSets or AvailabilitySet"
+              }
+            },
+            "userAgentPoolAvailabilityZones": {
+              "type": "array",
+              "defaultValue": [
+                "1",
+                "2",
+                "3"
+              ],
+              "metadata": {
+                "description": "Specifies the availability zones for the agent nodes in the user node pool. Requirese the use of VirtualMachineScaleSets as node pool type."
+              }
+            },
+            "daprEnabled": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Specifies whether the Dapr extension is enabled or not."
+              }
+            },
+            "daprHaEnabled": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable high availability (HA) mode for the Dapr control plane"
+              }
+            },
+            "azurePolicyEnabled": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Specifies whether the azurepolicy add-on is enabled or not."
+              }
+            },
+            "azureKeyvaultSecretsProviderEnabled": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Specifies whether the Azure Key Vault Provider for Secrets Store CSI Driver addon is enabled or not."
+              }
+            },
+            "kubeDashboardEnabled": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Specifies whether the kubeDashboard add-on is enabled or not."
+              }
+            },
+            "oidcIssuerProfileEnabled": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Specifies whether the OIDC issuer is enabled."
+              }
+            },
+            "autoScalerProfileScanInterval": {
+              "type": "string",
+              "defaultValue": "10s",
+              "metadata": {
+                "description": "Specifies the scan interval of the auto-scaler of the AKS cluster."
+              }
+            },
+            "autoScalerProfileScaleDownDelayAfterAdd": {
+              "type": "string",
+              "defaultValue": "10m",
+              "metadata": {
+                "description": "Specifies the scale down delay after add of the auto-scaler of the AKS cluster."
+              }
+            },
+            "autoScalerProfileScaleDownDelayAfterDelete": {
+              "type": "string",
+              "defaultValue": "20s",
+              "metadata": {
+                "description": "Specifies the scale down delay after delete of the auto-scaler of the AKS cluster."
+              }
+            },
+            "autoScalerProfileScaleDownDelayAfterFailure": {
+              "type": "string",
+              "defaultValue": "3m",
+              "metadata": {
+                "description": "Specifies scale down delay after failure of the auto-scaler of the AKS cluster."
+              }
+            },
+            "autoScalerProfileScaleDownUnneededTime": {
+              "type": "string",
+              "defaultValue": "10m",
+              "metadata": {
+                "description": "Specifies the scale down unneeded time of the auto-scaler of the AKS cluster."
+              }
+            },
+            "autoScalerProfileScaleDownUnreadyTime": {
+              "type": "string",
+              "defaultValue": "20m",
+              "metadata": {
+                "description": "Specifies the scale down unready time of the auto-scaler of the AKS cluster."
+              }
+            },
+            "autoScalerProfileUtilizationThreshold": {
+              "type": "string",
+              "defaultValue": "0.5",
+              "metadata": {
+                "description": "Specifies the utilization threshold of the auto-scaler of the AKS cluster."
+              }
+            },
+            "autoScalerProfileMaxGracefulTerminationSec": {
+              "type": "string",
+              "defaultValue": "600",
+              "metadata": {
+                "description": "Specifies the max graceful termination time interval in seconds for the auto-scaler of the AKS cluster."
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the resource id of the Log Analytics workspace."
+              }
+            },
+            "retentionInDays": {
+              "type": "int",
+              "defaultValue": 30,
+              "metadata": {
+                "description": "Specifies the workspace data retention in days."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Specifies the location."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "Specifies the resource tags."
+              }
+            },
+            "blobCSIDriverEnabled": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Specifies whether to enable the Azure Blob CSI Driver. The default value is false."
+              }
+            },
+            "diskCSIDriverEnabled": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Specifies whether to enable the Azure Disk CSI Driver. The default value is true."
+              }
+            },
+            "fileCSIDriverEnabled": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Specifies whether to enable the Azure File CSI Driver. The default value is true."
+              }
+            },
+            "snapshotControllerEnabled": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Specifies whether to enable the Snapshot Controller. The default value is true."
+              }
+            },
+            "defenderSecurityMonitoringEnabled": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Specifies whether to enable Defender threat detection. The default value is true."
+              }
+            },
+            "imageCleanerEnabled": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Specifies whether to enable ImageCleaner on AKS cluster. The default value is false."
+              }
+            },
+            "imageCleanerIntervalHours": {
+              "type": "int",
+              "defaultValue": 24,
+              "metadata": {
+                "description": "Specifies whether ImageCleaner scanning interval in hours."
+              }
+            },
+            "workloadIdentityEnabled": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Specifies whether to enable Workload Identity. The default value is false."
+              }
+            }
+          },
+          "variables": {
+            "copy": [
+              {
+                "name": "logs",
+                "count": "[length(variables('logCategories'))]",
+                "input": {
+                  "category": "[variables('logCategories')[copyIndex('logs')]]",
+                  "enabled": true,
+                  "retentionPolicy": {
+                    "enabled": true,
+                    "days": "[parameters('retentionInDays')]"
+                  }
+                }
+              },
+              {
+                "name": "metrics",
+                "count": "[length(variables('metricCategories'))]",
+                "input": {
+                  "category": "[variables('metricCategories')[copyIndex('metrics')]]",
+                  "enabled": true,
+                  "retentionPolicy": {
+                    "enabled": true,
+                    "days": "[parameters('retentionInDays')]"
+                  }
+                }
+              }
+            ],
+            "diagnosticSettingsName": "diagnosticSettings",
+            "logCategories": [
+              "kube-apiserver",
+              "kube-audit",
+              "kube-audit-admin",
+              "kube-controller-manager",
+              "kube-scheduler",
+              "cluster-autoscaler",
+              "cloud-controller-manager",
+              "guard",
+              "csi-azuredisk-controller",
+              "csi-azurefile-controller",
+              "csi-snapshot-controller"
+            ],
+            "metricCategories": [
+              "AllMetrics"
+            ]
+          },
+          "resources": {
+            "aksCluster": {
+              "type": "Microsoft.ContainerService/managedClusters",
+              "apiVersion": "2023-05-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "Base",
+                "tier": "[parameters('skuTier')]"
+              },
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "kubernetesVersion": "[parameters('kubernetesVersion')]",
+                "dnsPrefix": "[parameters('dnsPrefix')]",
+                "agentPoolProfiles": [
+                  {
+                    "name": "[toLower(parameters('systemAgentPoolName'))]",
+                    "count": "[parameters('systemAgentPoolAgentCount')]",
+                    "vmSize": "[parameters('systemAgentPoolVmSize')]",
+                    "osDiskSizeGB": "[parameters('systemAgentPoolOsDiskSizeGB')]",
+                    "osDiskType": "[parameters('systemAgentPoolOsDiskType')]",
+                    "maxPods": "[parameters('systemAgentPoolMaxPods')]",
+                    "osType": "[parameters('systemAgentPoolOsType')]",
+                    "osSKU": "[parameters('systemAgentPoolOsSKU')]",
+                    "maxCount": "[parameters('systemAgentPoolMaxCount')]",
+                    "minCount": "[parameters('systemAgentPoolMinCount')]",
+                    "scaleSetPriority": "[parameters('systemAgentPoolScaleSetPriority')]",
+                    "scaleSetEvictionPolicy": "[parameters('systemAgentPoolScaleSetEvictionPolicy')]",
+                    "enableAutoScaling": "[parameters('systemAgentPoolEnableAutoScaling')]",
+                    "mode": "System",
+                    "type": "[parameters('systemAgentPoolType')]",
+                    "availabilityZones": "[parameters('systemAgentPoolAvailabilityZones')]",
+                    "nodeLabels": "[parameters('systemAgentPoolNodeLabels')]",
+                    "nodeTaints": "[parameters('systemAgentPoolNodeTaints')]",
+                    "kubeletDiskType": "[parameters('systemAgentPoolKubeletDiskType')]"
+                  },
+                  {
+                    "name": "[toLower(parameters('userAgentPoolName'))]",
+                    "count": "[parameters('userAgentPoolAgentCount')]",
+                    "vmSize": "[parameters('userAgentPoolVmSize')]",
+                    "osDiskSizeGB": "[parameters('userAgentPoolOsDiskSizeGB')]",
+                    "osDiskType": "[parameters('userAgentPoolOsDiskType')]",
+                    "maxPods": "[parameters('userAgentPoolMaxPods')]",
+                    "osType": "[parameters('userAgentPoolOsType')]",
+                    "osSKU": "[parameters('userAgentPoolOsSKU')]",
+                    "maxCount": "[parameters('userAgentPoolMaxCount')]",
+                    "minCount": "[parameters('userAgentPoolMinCount')]",
+                    "scaleSetPriority": "[parameters('userAgentPoolScaleSetPriority')]",
+                    "scaleSetEvictionPolicy": "[parameters('userAgentPoolScaleSetEvictionPolicy')]",
+                    "enableAutoScaling": "[parameters('userAgentPoolEnableAutoScaling')]",
+                    "mode": "User",
+                    "type": "[parameters('userAgentPoolType')]",
+                    "availabilityZones": "[parameters('userAgentPoolAvailabilityZones')]",
+                    "nodeLabels": "[parameters('userAgentPoolNodeLabels')]",
+                    "nodeTaints": "[parameters('userAgentPoolNodeTaints')]",
+                    "kubeletDiskType": "[parameters('userAgentPoolKubeletDiskType')]"
+                  }
+                ],
+                "addonProfiles": {
+                  "omsagent": {
+                    "enabled": true,
+                    "config": {
+                      "logAnalyticsWorkspaceResourceID": "[parameters('logAnalyticsWorkspaceId')]",
+                      "useAADAuth": "true"
+                    }
+                  },
+                  "azurepolicy": {
+                    "enabled": "[parameters('azurePolicyEnabled')]"
+                  },
+                  "kubeDashboard": {
+                    "enabled": "[parameters('kubeDashboardEnabled')]"
+                  },
+                  "azureKeyvaultSecretsProvider": {
+                    "config": {
+                      "enableSecretRotation": "false"
+                    },
+                    "enabled": "[parameters('azureKeyvaultSecretsProviderEnabled')]"
+                  }
+                },
+                "oidcIssuerProfile": {
+                  "enabled": "[parameters('oidcIssuerProfileEnabled')]"
+                },
+                "enableRBAC": true,
+                "networkProfile": {
+                  "networkPlugin": "[parameters('networkPlugin')]",
+                  "networkPluginMode": "[if(equals(parameters('networkPlugin'), 'azure'), parameters('networkPluginMode'), '')]",
+                  "networkPolicy": "[parameters('networkPolicy')]",
+                  "podCidr": "[if(or(equals(parameters('networkPlugin'), 'kubenet'), equals(parameters('networkPluginMode'), 'Overlay')), parameters('podCidr'), null())]",
+                  "serviceCidr": "[parameters('serviceCidr')]",
+                  "dnsServiceIP": "[parameters('dnsServiceIP')]",
+                  "outboundType": "[parameters('outboundType')]",
+                  "loadBalancerSku": "[parameters('loadBalancerSku')]",
+                  "loadBalancerProfile": null
+                },
+                "autoUpgradeProfile": {
+                  "upgradeChannel": "[parameters('upgradeChannel')]"
+                },
+                "autoScalerProfile": {
+                  "scan-interval": "[parameters('autoScalerProfileScanInterval')]",
+                  "scale-down-delay-after-add": "[parameters('autoScalerProfileScaleDownDelayAfterAdd')]",
+                  "scale-down-delay-after-delete": "[parameters('autoScalerProfileScaleDownDelayAfterDelete')]",
+                  "scale-down-delay-after-failure": "[parameters('autoScalerProfileScaleDownDelayAfterFailure')]",
+                  "scale-down-unneeded-time": "[parameters('autoScalerProfileScaleDownUnneededTime')]",
+                  "scale-down-unready-time": "[parameters('autoScalerProfileScaleDownUnreadyTime')]",
+                  "scale-down-utilization-threshold": "[parameters('autoScalerProfileUtilizationThreshold')]",
+                  "max-graceful-termination-sec": "[parameters('autoScalerProfileMaxGracefulTerminationSec')]"
+                },
+                "securityProfile": {
+                  "defender": {
+                    "logAnalyticsWorkspaceResourceId": "[parameters('logAnalyticsWorkspaceId')]",
+                    "securityMonitoring": {
+                      "enabled": "[parameters('defenderSecurityMonitoringEnabled')]"
+                    }
+                  },
+                  "imageCleaner": {
+                    "enabled": "[parameters('imageCleanerEnabled')]",
+                    "intervalHours": "[parameters('imageCleanerIntervalHours')]"
+                  },
+                  "workloadIdentity": {
+                    "enabled": "[parameters('workloadIdentityEnabled')]"
+                  }
+                },
+                "storageProfile": {
+                  "blobCSIDriver": {
+                    "enabled": "[parameters('blobCSIDriverEnabled')]"
+                  },
+                  "diskCSIDriver": {
+                    "enabled": "[parameters('diskCSIDriverEnabled')]"
+                  },
+                  "fileCSIDriver": {
+                    "enabled": "[parameters('fileCSIDriverEnabled')]"
+                  },
+                  "snapshotController": {
+                    "enabled": "[parameters('snapshotControllerEnabled')]"
+                  }
+                }
+              }
+            },
+            "daprExtension": {
+              "condition": "[parameters('daprEnabled')]",
+              "type": "Microsoft.KubernetesConfiguration/extensions",
+              "apiVersion": "2022-04-02-preview",
+              "scope": "[format('Microsoft.ContainerService/managedClusters/{0}', parameters('name'))]",
+              "name": "dapr",
+              "properties": {
+                "extensionType": "Microsoft.Dapr",
+                "autoUpgradeMinorVersion": true,
+                "releaseTrain": "Stable",
+                "configurationSettings": {
+                  "global.ha.enabled": "[format('{0}', parameters('daprHaEnabled'))]"
+                },
+                "scope": {
+                  "cluster": {
+                    "releaseNamespace": "dapr-system"
+                  }
+                },
+                "configurationProtectedSettings": {}
+              },
+              "dependsOn": [
+                "aksCluster"
+              ]
+            },
+            "diagnosticSettings": {
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.ContainerService/managedClusters/{0}', parameters('name'))]",
+              "name": "[variables('diagnosticSettingsName')]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "logs": "[variables('logs')]",
+                "metrics": "[variables('metrics')]"
+              },
+              "dependsOn": [
+                "aksCluster"
+              ]
+            }
+          },
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ContainerService/managedClusters', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "location": {
+              "type": "string",
+              "value": "[reference('aksCluster', '2023-05-01', 'full').location]"
+            },
+            "controlPlaneFQDN": {
+              "type": "string",
+              "value": "[reference('aksCluster').fqdn]"
+            },
+            "principalIdentity": {
+              "type": "string",
+              "value": "[reference('aksCluster', '2023-05-01', 'full').identity.principalId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "logAnalyticsWorkspace"
+      ]
+    },
+    "logAnalyticsDataCollection": {
+      "condition": "[parameters('grafanaEnabled')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "loganalytics-datacollection",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "logAnalyticsWorkspaceId": {
+            "value": "[reference('logAnalyticsWorkspace').outputs.id.value]"
+          },
+          "logAnalyticsWorkspaceLocation": {
+            "value": "[reference('logAnalyticsWorkspace').outputs.location.value]"
+          },
+          "clusterResourceId": {
+            "value": "[reference('aksCluster').outputs.id.value]"
+          },
+          "clusterLocation": {
+            "value": "[reference('aksCluster').outputs.location.value]"
+          },
+          "tags": {
+            "value": "[parameters('defaultTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.1-experimental",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+            "_EXPERIMENTAL_FEATURES_ENABLED": [
+              "Extensibility"
+            ],
+            "_generator": {
+              "name": "bicep",
+              "version": "0.26.54.24096",
+              "templateHash": "15170389653698146346"
+            }
+          },
+          "parameters": {
+            "clusterResourceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the AKS cluster resource Id."
+              }
+            },
+            "clusterLocation": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the AKS cluster resource location."
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the log analytics workspace resource id."
+              }
+            },
+            "logAnalyticsWorkspaceLocation": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the log analytics workspace resource location."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "Specifies the resource tags."
+              }
+            }
+          },
+          "variables": {
+            "clusterSubscriptionId": "[split(parameters('clusterResourceId'), '/')[2]]",
+            "clusterResourceGroup": "[split(parameters('clusterResourceId'), '/')[4]]",
+            "clusterName": "[split(parameters('clusterResourceId'), '/')[8]]",
+            "dcrName": "[format('MSCI-{0}-{1}', parameters('logAnalyticsWorkspaceLocation'), variables('clusterName'))]",
+            "dcraName": "[format('MSCI-{0}-{1}', parameters('clusterLocation'), variables('clusterName'))]"
+          },
+          "resources": {
+            "dcr": {
+              "type": "Microsoft.Insights/dataCollectionRules",
+              "apiVersion": "2022-06-01",
+              "name": "[variables('dcrName')]",
+              "location": "[parameters('logAnalyticsWorkspaceLocation')]",
+              "kind": "Linux",
+              "properties": {
+                "dataSources": {
+                  "extensions": [
+                    {
+                      "name": "ContainerInsightsExtension",
+                      "streams": [
+                        "Microsoft-ContainerInsights-Group-Default"
+                      ],
+                      "extensionName": "ContainerInsights",
+                      "extensionSettings": {
+                        "dataCollectionSettings": {
+                          "interval": "1m",
+                          "namespaceFilteringMode": "Off",
+                          "enableContainerLogV2": true
+                        }
+                      }
+                    }
+                  ],
+                  "syslog": []
+                },
+                "destinations": {
+                  "logAnalytics": [
+                    {
+                      "workspaceResourceId": "[parameters('logAnalyticsWorkspaceId')]",
+                      "name": "ciworkspace"
+                    }
+                  ]
+                },
+                "dataFlows": [
+                  {
+                    "streams": [
+                      "Microsoft-ContainerInsights-Group-Default"
+                    ],
+                    "destinations": [
+                      "ciworkspace"
+                    ]
+                  }
+                ]
+              },
+              "tags": "[parameters('tags')]"
+            },
+            "logAnalyticsDcraClusterResourceId": {
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('loganalytics-dcra-{0}', uniqueString(parameters('clusterResourceId')))]",
+              "subscriptionId": "[variables('clusterSubscriptionId')]",
+              "resourceGroup": "[variables('clusterResourceGroup')]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "dataCollectionRuleId": {
+                    "value": "[resourceId('Microsoft.Insights/dataCollectionRules', variables('dcrName'))]"
+                  },
+                  "clusterName": {
+                    "value": "[variables('clusterName')]"
+                  },
+                  "dcraName": {
+                    "value": "[variables('dcraName')]"
+                  },
+                  "clusterLocation": {
+                    "value": "[parameters('clusterLocation')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "languageVersion": "2.1-experimental",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+                    "_EXPERIMENTAL_FEATURES_ENABLED": [
+                      "Extensibility"
+                    ],
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.26.54.24096",
+                      "templateHash": "5024351077006304689"
+                    }
+                  },
+                  "parameters": {
+                    "dataCollectionRuleId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Specifies the data collection rule resource id."
+                      }
+                    },
+                    "dcraName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Specifies the data collection rule resource association name."
+                      }
+                    },
+                    "clusterName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Specifies the AKS cluster name."
+                      }
+                    },
+                    "clusterLocation": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Specifies the AKS cluster resource location."
+                      }
+                    }
+                  },
+                  "resources": {
+                    "dataCollectionRuleAssociations": {
+                      "type": "Microsoft.ContainerService/managedClusters/providers/dataCollectionRuleAssociations",
+                      "apiVersion": "2022-06-01",
+                      "name": "[format('{0}/microsoft.insights/{1}', parameters('clusterName'), parameters('dcraName'))]",
+                      "location": "[parameters('clusterLocation')]",
+                      "properties": {
+                        "description": "Association of data collection rule. Deleting this association will break the data collection for this AKS Cluster.",
+                        "dataCollectionRuleId": "[parameters('dataCollectionRuleId')]"
+                      }
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "dcr"
+              ]
+            }
+          },
+          "outputs": {
+            "dcrId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Insights/dataCollectionRules', variables('dcrName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "aksCluster",
+        "logAnalyticsWorkspace"
+      ]
+    },
+    "grafanaDashboard": {
+      "condition": "[parameters('grafanaEnabled')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[parameters('grafanaDashboardName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[parameters('grafanaDashboardName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "adminObjectId": {
+            "value": "[parameters('grafanaAdminObjectId')]"
+          },
+          "azureMonitorWorkspaceId": {
+            "value": "[resourceId('Microsoft.Monitor/accounts', parameters('azureMonitorWorkspaceName'))]"
+          },
+          "clusterResourceId": {
+            "value": "[reference('aksCluster').outputs.id.value]"
+          },
+          "clusterLocation": {
+            "value": "[reference('aksCluster').outputs.location.value]"
+          },
+          "tags": {
+            "value": "[parameters('defaultTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.1-experimental",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+            "_EXPERIMENTAL_FEATURES_ENABLED": [
+              "Extensibility"
+            ],
+            "_generator": {
+              "name": "bicep",
+              "version": "0.26.54.24096",
+              "templateHash": "7469985088344456850"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the name of the grafana dashboard."
+              }
+            },
+            "skuName": {
+              "type": "string",
+              "defaultValue": "Standard",
+              "metadata": {
+                "description": "Specifies the sku of the grafana dashboard."
+              }
+            },
+            "adminObjectId": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the admin object id."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the location."
+              }
+            },
+            "azureMonitorWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the azure monitor workspace resource id."
+              }
+            },
+            "clusterResourceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the AKS cluster resource Id."
+              }
+            },
+            "clusterLocation": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the AKS cluster resource location."
+              }
+            },
+            "metricLabelsAllowlist": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Specifies comma-separated list of Kubernetes annotation keys that will be used in the resource's labels metric (Example: 'namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...') By default the metric contains only resource name and namespace labels."
+              }
+            },
+            "metricAnnotationsAllowList": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Specifies comma-separated list of Kubernetes annotation keys that will be used in the resource's labels metric (Example: 'namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...') By default the metric contains only resource name and namespace labels."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "Specifies the resource tags."
+              }
+            }
+          },
+          "variables": {
+            "azureMonitorWorkspaceSubscriptionId": "[split(parameters('azureMonitorWorkspaceId'), '/')[2]]",
+            "azureMonitorWorkspaceResourceGroupName": "[split(parameters('azureMonitorWorkspaceId'), '/')[4]]",
+            "clusterSubscriptionId": "[split(parameters('clusterResourceId'), '/')[2]]",
+            "clusterResourceGroup": "[split(parameters('clusterResourceId'), '/')[4]]",
+            "clusterName": "[split(parameters('clusterResourceId'), '/')[8]]",
+            "roleDefinitionId": {
+              "GrafanaAdmin": {
+                "id": "[subscriptionResourceId(variables('azureMonitorWorkspaceSubscriptionId'), 'Microsoft.Authorization/roleDefinitions', '22926164-76b3-42b3-bc55-97df8dab3e41')]"
+              },
+              "MonitoringReader": {
+                "id": "[subscriptionResourceId(variables('azureMonitorWorkspaceSubscriptionId'), 'Microsoft.Authorization/roleDefinitions', '43d0d8ad-25c7-4714-9337-8ba259a9fe05')]"
+              },
+              "MonitoringDataReader": {
+                "id": "[subscriptionResourceId(variables('azureMonitorWorkspaceSubscriptionId'), 'Microsoft.Authorization/roleDefinitions', 'b0d8363b-8ddd-447d-831f-62ca05bff136')]"
+              }
+            }
+          },
+          "resources": {
+            "grafana": {
+              "type": "Microsoft.Dashboard/grafana",
+              "apiVersion": "2022-08-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "[parameters('skuName')]"
+              },
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "zoneRedundancy": "Disabled",
+                "publicNetworkAccess": "Enabled",
+                "autoGeneratedDomainNameLabelScope": "TenantReuse",
+                "grafanaIntegrations": {
+                  "azureMonitorWorkspaceIntegrations": [
+                    {
+                      "azureMonitorWorkspaceResourceId": "[parameters('azureMonitorWorkspaceId')]"
+                    }
+                  ]
+                }
+              },
+              "tags": "[parameters('tags')]"
+            },
+            "adminRoleAssignment": {
+              "condition": "[not(empty(parameters('adminObjectId')))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Dashboard/grafana/{0}', parameters('name'))]",
+              "name": "[guid(resourceId('Microsoft.Dashboard/grafana', parameters('name')), variables('roleDefinitionId').GrafanaAdmin.id)]",
+              "properties": {
+                "roleDefinitionId": "[variables('roleDefinitionId').GrafanaAdmin.id]",
+                "principalId": "[parameters('adminObjectId')]"
+              },
+              "dependsOn": [
+                "grafana"
+              ]
+            },
+            "readerRoleAssignment": {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Dashboard/grafana/{0}', parameters('name'))]",
+              "name": "[guid(resourceId('Microsoft.Dashboard/grafana', parameters('name')), variables('roleDefinitionId').MonitoringReader.id)]",
+              "properties": {
+                "roleDefinitionId": "[variables('roleDefinitionId').MonitoringReader.id]",
+                "principalId": "[reference('grafana', '2022-08-01', 'full').identity.principalId]"
+              },
+              "dependsOn": [
+                "grafana"
+              ]
+            },
+            "grafanaIdenityToAzureMonitor": {
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[guid(resourceId('Microsoft.Dashboard/grafana', parameters('name')), variables('roleDefinitionId').MonitoringDataReader.id)]",
+              "subscriptionId": "[variables('azureMonitorWorkspaceSubscriptionId')]",
+              "resourceGroup": "[variables('azureMonitorWorkspaceResourceGroupName')]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "roleNameGuid": {
+                    "value": "[guid(resourceId('Microsoft.Dashboard/grafana', parameters('name')), parameters('adminObjectId'), variables('roleDefinitionId').MonitoringDataReader.id)]"
+                  },
+                  "roleDefinitionId": {
+                    "value": "[variables('roleDefinitionId').MonitoringDataReader.id]"
+                  },
+                  "principalId": {
+                    "value": "[reference('grafana', '2022-08-01', 'full').identity.principalId]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "languageVersion": "2.1-experimental",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+                    "_EXPERIMENTAL_FEATURES_ENABLED": [
+                      "Extensibility"
+                    ],
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.26.54.24096",
+                      "templateHash": "16834292699368530131"
+                    }
+                  },
+                  "parameters": {
+                    "principalId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Specifies the principal id."
+                      }
+                    },
+                    "roleDefinitionId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Specifies the role definition id."
+                      }
+                    },
+                    "roleNameGuid": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "A new GUID used to identify the role assignment."
+                      }
+                    }
+                  },
+                  "resources": {
+                    "roleAssignmentLocal": {
+                      "type": "Microsoft.Authorization/roleAssignments",
+                      "apiVersion": "2022-04-01",
+                      "name": "[parameters('roleNameGuid')]",
+                      "properties": {
+                        "roleDefinitionId": "[parameters('roleDefinitionId')]",
+                        "principalId": "[parameters('principalId')]"
+                      }
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "grafana"
+              ]
+            },
+            "enableMonitorAddon": {
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('OnboardMetricsOnCluster-{0}', uniqueString(parameters('clusterResourceId')))]",
+              "subscriptionId": "[variables('clusterSubscriptionId')]",
+              "resourceGroup": "[variables('clusterResourceGroup')]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "clusterName": {
+                    "value": "[variables('clusterName')]"
+                  },
+                  "clusterLocation": {
+                    "value": "[parameters('clusterLocation')]"
+                  },
+                  "metricLabelsAllowlist": {
+                    "value": "[parameters('metricLabelsAllowlist')]"
+                  },
+                  "metricAnnotationsAllowList": {
+                    "value": "[parameters('metricAnnotationsAllowList')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "languageVersion": "2.1-experimental",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+                    "_EXPERIMENTAL_FEATURES_ENABLED": [
+                      "Extensibility"
+                    ],
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.26.54.24096",
+                      "templateHash": "16857824565305167092"
+                    }
+                  },
+                  "parameters": {
+                    "clusterName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Specifies the AKS cluster resource name."
+                      }
+                    },
+                    "clusterLocation": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Specifies the AKS cluster resource location."
+                      }
+                    },
+                    "metricLabelsAllowlist": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Specifies comma-separated list of Kubernetes annotation keys that will be used in the resource's labels metric (Example: 'namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...') By default the metric contains only resource name and namespace labels."
+                      }
+                    },
+                    "metricAnnotationsAllowList": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Specifies comma-separated list of Kubernetes annotation keys that will be used in the resource's labels metric (Example: 'namespaces=[kubernetes.io/team,...],pods=[kubernetes.io/team],...') By default the metric contains only resource name and namespace labels."
+                      }
+                    }
+                  },
+                  "resources": {
+                    "enableMonitorAddon": {
+                      "type": "Microsoft.ContainerService/managedClusters",
+                      "apiVersion": "2023-05-01",
+                      "name": "[parameters('clusterName')]",
+                      "location": "[parameters('clusterLocation')]",
+                      "properties": {
+                        "azureMonitorProfile": {
+                          "metrics": {
+                            "enabled": true,
+                            "kubeStateMetrics": {
+                              "metricLabelsAllowlist": "[parameters('metricLabelsAllowlist')]",
+                              "metricAnnotationsAllowList": "[parameters('metricAnnotationsAllowList')]"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "grafanaIdenityToAzureMonitor"
+              ]
+            }
+          },
+          "outputs": {
+            "dashboardFQDN": {
+              "type": "string",
+              "value": "[reference('grafana').endpoint]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "aksCluster",
+        "azureMonitorWorkspace"
+      ]
+    },
+    "dataCollection": {
+      "condition": "[parameters('grafanaEnabled')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "dataCollection",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "azureMonitorWorkspaceLocation": {
+            "value": "[reference('azureMonitorWorkspace', '2023-04-03', 'full').location]"
+          },
+          "azureMonitorWorkspaceId": {
+            "value": "[resourceId('Microsoft.Monitor/accounts', parameters('azureMonitorWorkspaceName'))]"
+          },
+          "clusterResourceId": {
+            "value": "[reference('aksCluster').outputs.id.value]"
+          },
+          "clusterLocation": {
+            "value": "[reference('aksCluster').outputs.location.value]"
+          },
+          "tags": {
+            "value": "[parameters('defaultTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.1-experimental",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+            "_EXPERIMENTAL_FEATURES_ENABLED": [
+              "Extensibility"
+            ],
+            "_generator": {
+              "name": "bicep",
+              "version": "0.26.54.24096",
+              "templateHash": "12147806375894004049"
+            }
+          },
+          "parameters": {
+            "clusterResourceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the AKS cluster resource Id."
+              }
+            },
+            "clusterLocation": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the AKS cluster resource location."
+              }
+            },
+            "azureMonitorWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the azure monitor workspace resource id."
+              }
+            },
+            "azureMonitorWorkspaceLocation": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the azure monitor workspace resource location."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "Specifies the resource tags."
+              }
+            }
+          },
+          "variables": {
+            "clusterSubscriptionId": "[split(parameters('clusterResourceId'), '/')[2]]",
+            "clusterResourceGroup": "[split(parameters('clusterResourceId'), '/')[4]]",
+            "clusterName": "[split(parameters('clusterResourceId'), '/')[8]]",
+            "dceName": "[format('MSProm-{0}-{1}', parameters('azureMonitorWorkspaceLocation'), variables('clusterName'))]",
+            "dcrName": "[format('MSProm-{0}-{1}', parameters('azureMonitorWorkspaceLocation'), variables('clusterName'))]",
+            "dcraName": "[format('MSProm-{0}-{1}', parameters('clusterLocation'), variables('clusterName'))]"
+          },
+          "resources": {
+            "dce": {
+              "type": "Microsoft.Insights/dataCollectionEndpoints",
+              "apiVersion": "2022-06-01",
+              "name": "[variables('dceName')]",
+              "location": "[parameters('azureMonitorWorkspaceLocation')]",
+              "kind": "Linux",
+              "properties": {},
+              "tags": "[parameters('tags')]"
+            },
+            "dcr": {
+              "type": "Microsoft.Insights/dataCollectionRules",
+              "apiVersion": "2022-06-01",
+              "name": "[variables('dcrName')]",
+              "location": "[parameters('azureMonitorWorkspaceLocation')]",
+              "kind": "Linux",
+              "properties": {
+                "dataCollectionEndpointId": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', variables('dceName'))]",
+                "dataFlows": [
+                  {
+                    "destinations": [
+                      "MonitoringAccount1"
+                    ],
+                    "streams": [
+                      "Microsoft-PrometheusMetrics"
+                    ]
+                  }
+                ],
+                "dataSources": {
+                  "prometheusForwarder": [
+                    {
+                      "name": "PrometheusDataSource",
+                      "streams": [
+                        "Microsoft-PrometheusMetrics"
+                      ],
+                      "labelIncludeFilter": {}
+                    }
+                  ]
+                },
+                "description": "DCR for Azure Monitor Metrics Profile (Managed Prometheus)",
+                "destinations": {
+                  "monitoringAccounts": [
+                    {
+                      "accountResourceId": "[parameters('azureMonitorWorkspaceId')]",
+                      "name": "MonitoringAccount1"
+                    }
+                  ]
+                }
+              },
+              "tags": "[parameters('tags')]",
+              "dependsOn": [
+                "dce"
+              ]
+            },
+            "azureMonitorMetricsDcraClusterResourceId": {
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('azuremonitormetrics-dcra-{0}', uniqueString(parameters('clusterResourceId')))]",
+              "subscriptionId": "[variables('clusterSubscriptionId')]",
+              "resourceGroup": "[variables('clusterResourceGroup')]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "dataCollectionRuleId": {
+                    "value": "[resourceId('Microsoft.Insights/dataCollectionRules', variables('dcrName'))]"
+                  },
+                  "clusterName": {
+                    "value": "[variables('clusterName')]"
+                  },
+                  "dcraName": {
+                    "value": "[variables('dcraName')]"
+                  },
+                  "clusterLocation": {
+                    "value": "[parameters('clusterLocation')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "languageVersion": "2.1-experimental",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+                    "_EXPERIMENTAL_FEATURES_ENABLED": [
+                      "Extensibility"
+                    ],
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.26.54.24096",
+                      "templateHash": "5024351077006304689"
+                    }
+                  },
+                  "parameters": {
+                    "dataCollectionRuleId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Specifies the data collection rule resource id."
+                      }
+                    },
+                    "dcraName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Specifies the data collection rule resource association name."
+                      }
+                    },
+                    "clusterName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Specifies the AKS cluster name."
+                      }
+                    },
+                    "clusterLocation": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Specifies the AKS cluster resource location."
+                      }
+                    }
+                  },
+                  "resources": {
+                    "dataCollectionRuleAssociations": {
+                      "type": "Microsoft.ContainerService/managedClusters/providers/dataCollectionRuleAssociations",
+                      "apiVersion": "2022-06-01",
+                      "name": "[format('{0}/microsoft.insights/{1}', parameters('clusterName'), parameters('dcraName'))]",
+                      "location": "[parameters('clusterLocation')]",
+                      "properties": {
+                        "description": "Association of data collection rule. Deleting this association will break the data collection for this AKS Cluster.",
+                        "dataCollectionRuleId": "[parameters('dataCollectionRuleId')]"
+                      }
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "dce",
+                "dcr"
+              ]
+            }
+          },
+          "outputs": {
+            "dcrId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Insights/dataCollectionRules', variables('dcrName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "aksCluster",
+        "azureMonitorWorkspace",
+        "grafanaDashboard"
+      ]
+    },
+    "alertManagement": {
+      "condition": "[parameters('grafanaEnabled')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "alertManagement",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "azureMonitorWorkspaceLocation": {
+            "value": "[reference('azureMonitorWorkspace', '2023-04-03', 'full').location]"
+          },
+          "azureMonitorWorkspaceResourceId": {
+            "value": "[resourceId('Microsoft.Monitor/accounts', parameters('azureMonitorWorkspaceName'))]"
+          },
+          "clusterResourceId": {
+            "value": "[reference('aksCluster').outputs.id.value]"
+          },
+          "tags": {
+            "value": "[parameters('defaultTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.1-experimental",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+            "_EXPERIMENTAL_FEATURES_ENABLED": [
+              "Extensibility"
+            ],
+            "_generator": {
+              "name": "bicep",
+              "version": "0.26.54.24096",
+              "templateHash": "4719418269999990754"
+            }
+          },
+          "parameters": {
+            "azureMonitorWorkspaceResourceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the azure monitor workspace resource id."
+              }
+            },
+            "azureMonitorWorkspaceLocation": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the azure monitor workspace resource location."
+              }
+            },
+            "clusterResourceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the AKS cluster resource id."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "Specifies the resource tags."
+              }
+            }
+          },
+          "variables": {
+            "clusterName": "[split(parameters('clusterResourceId'), '/')[8]]",
+            "nodeRecordingRuleGroupPrefix": "NodeRecordingRulesRuleGroup-",
+            "nodeRecordingRuleGroupName": "[format('{0}{1}', variables('nodeRecordingRuleGroupPrefix'), variables('clusterName'))]",
+            "nodeRecordingRuleGroupDescription": "Node Recording Rules RuleGroup",
+            "version": " - 0.1",
+            "kubernetesRecordingRuleGrouPrefix": "KubernetesReccordingRulesRuleGroup-",
+            "kubernetesRecordingRuleGroupName": "[format('{0}{1}', variables('kubernetesRecordingRuleGrouPrefix'), variables('clusterName'))]",
+            "kubernetesRecordingRuleGroupDescription": "Kubernetes Recording Rules RuleGroup"
+          },
+          "resources": {
+            "nodeRecordingRuleGroup": {
+              "type": "Microsoft.AlertsManagement/prometheusRuleGroups",
+              "apiVersion": "2023-03-01",
+              "name": "[variables('nodeRecordingRuleGroupName')]",
+              "location": "[parameters('azureMonitorWorkspaceLocation')]",
+              "properties": {
+                "description": "[format('{0}{1}', variables('nodeRecordingRuleGroupDescription'), variables('version'))]",
+                "scopes": [
+                  "[parameters('azureMonitorWorkspaceResourceId')]"
+                ],
+                "enabled": true,
+                "clusterName": "[variables('clusterName')]",
+                "interval": "PT1M",
+                "rules": [
+                  {
+                    "record": "instance:node_num_cpu:sum",
+                    "expression": "count without (cpu, mode) (  node_cpu_seconds_total{job=\"node\",mode=\"idle\"})"
+                  },
+                  {
+                    "record": "instance:node_cpu_utilisation:rate5m",
+                    "expression": "1 - avg without (cpu) (  sum without (mode) (rate(node_cpu_seconds_total{job=\"node\", mode=~\"idle|iowait|steal\"}[5m])))"
+                  },
+                  {
+                    "record": "instance:node_load1_per_cpu:ratio",
+                    "expression": "(  node_load1{job=\"node\"}/  instance:node_num_cpu:sum{job=\"node\"})"
+                  },
+                  {
+                    "record": "instance:node_memory_utilisation:ratio",
+                    "expression": "1 - (  (    node_memory_MemAvailable_bytes{job=\"node\"}    or    (      node_memory_Buffers_bytes{job=\"node\"}      +      node_memory_Cached_bytes{job=\"node\"}      +      node_memory_MemFree_bytes{job=\"node\"}      +      node_memory_Slab_bytes{job=\"node\"}    )  )/  node_memory_MemTotal_bytes{job=\"node\"})"
+                  },
+                  {
+                    "record": "instance:node_vmstat_pgmajfault:rate5m",
+                    "expression": "rate(node_vmstat_pgmajfault{job=\"node\"}[5m])"
+                  },
+                  {
+                    "record": "instance_device:node_disk_io_time_seconds:rate5m",
+                    "expression": "rate(node_disk_io_time_seconds_total{job=\"node\", device!=\"\"}[5m])"
+                  },
+                  {
+                    "record": "instance_device:node_disk_io_time_weighted_seconds:rate5m",
+                    "expression": "rate(node_disk_io_time_weighted_seconds_total{job=\"node\", device!=\"\"}[5m])"
+                  },
+                  {
+                    "record": "instance:node_network_receive_bytes_excluding_lo:rate5m",
+                    "expression": "sum without (device) (  rate(node_network_receive_bytes_total{job=\"node\", device!=\"lo\"}[5m]))"
+                  },
+                  {
+                    "record": "instance:node_network_transmit_bytes_excluding_lo:rate5m",
+                    "expression": "sum without (device) (  rate(node_network_transmit_bytes_total{job=\"node\", device!=\"lo\"}[5m]))"
+                  },
+                  {
+                    "record": "instance:node_network_receive_drop_excluding_lo:rate5m",
+                    "expression": "sum without (device) (  rate(node_network_receive_drop_total{job=\"node\", device!=\"lo\"}[5m]))"
+                  },
+                  {
+                    "record": "instance:node_network_transmit_drop_excluding_lo:rate5m",
+                    "expression": "sum without (device) (  rate(node_network_transmit_drop_total{job=\"node\", device!=\"lo\"}[5m]))"
+                  }
+                ]
+              },
+              "tags": "[parameters('tags')]"
+            },
+            "kubernetesRecordingRuleGroup": {
+              "type": "Microsoft.AlertsManagement/prometheusRuleGroups",
+              "apiVersion": "2023-03-01",
+              "name": "[variables('kubernetesRecordingRuleGroupName')]",
+              "location": "[parameters('azureMonitorWorkspaceLocation')]",
+              "properties": {
+                "description": "[format('{0}{1}', variables('kubernetesRecordingRuleGroupDescription'), variables('version'))]",
+                "scopes": [
+                  "[parameters('azureMonitorWorkspaceResourceId')]"
+                ],
+                "enabled": true,
+                "clusterName": "[variables('clusterName')]",
+                "interval": "PT1M",
+                "rules": [
+                  {
+                    "record": "node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate",
+                    "expression": "sum by (cluster, namespace, pod, container) (  irate(container_cpu_usage_seconds_total{job=\"cadvisor\", image!=\"\"}[5m])) * on (cluster, namespace, pod) group_left(node) topk by (cluster, namespace, pod) (  1, max by(cluster, namespace, pod, node) (kube_pod_info{node!=\"\"}))"
+                  },
+                  {
+                    "record": "node_namespace_pod_container:container_memory_working_set_bytes",
+                    "expression": "container_memory_working_set_bytes{job=\"cadvisor\", image!=\"\"}* on (namespace, pod) group_left(node) topk by(namespace, pod) (1,  max by(namespace, pod, node) (kube_pod_info{node!=\"\"}))"
+                  },
+                  {
+                    "record": "node_namespace_pod_container:container_memory_rss",
+                    "expression": "container_memory_rss{job=\"cadvisor\", image!=\"\"}* on (namespace, pod) group_left(node) topk by(namespace, pod) (1,  max by(namespace, pod, node) (kube_pod_info{node!=\"\"}))"
+                  },
+                  {
+                    "record": "node_namespace_pod_container:container_memory_cache",
+                    "expression": "container_memory_cache{job=\"cadvisor\", image!=\"\"}* on (namespace, pod) group_left(node) topk by(namespace, pod) (1,  max by(namespace, pod, node) (kube_pod_info{node!=\"\"}))"
+                  },
+                  {
+                    "record": "node_namespace_pod_container:container_memory_swap",
+                    "expression": "container_memory_swap{job=\"cadvisor\", image!=\"\"}* on (namespace, pod) group_left(node) topk by(namespace, pod) (1,  max by(namespace, pod, node) (kube_pod_info{node!=\"\"}))"
+                  },
+                  {
+                    "record": "cluster:namespace:pod_memory:active:kube_pod_container_resource_requests",
+                    "expression": "kube_pod_container_resource_requests{resource=\"memory\",job=\"kube-state-metrics\"}  * on (namespace, pod, cluster)group_left() max by (namespace, pod, cluster) (  (kube_pod_status_phase{phase=~\"Pending|Running\"} == 1))"
+                  },
+                  {
+                    "record": "namespace_memory:kube_pod_container_resource_requests:sum",
+                    "expression": "sum by (namespace, cluster) (    sum by (namespace, pod, cluster) (        max by (namespace, pod, container, cluster) (          kube_pod_container_resource_requests{resource=\"memory\",job=\"kube-state-metrics\"}        ) * on(namespace, pod, cluster) group_left() max by (namespace, pod, cluster) (          kube_pod_status_phase{phase=~\"Pending|Running\"} == 1        )    ))"
+                  },
+                  {
+                    "record": "cluster:namespace:pod_cpu:active:kube_pod_container_resource_requests",
+                    "expression": "kube_pod_container_resource_requests{resource=\"cpu\",job=\"kube-state-metrics\"}  * on (namespace, pod, cluster)group_left() max by (namespace, pod, cluster) (  (kube_pod_status_phase{phase=~\"Pending|Running\"} == 1))"
+                  },
+                  {
+                    "record": "namespace_cpu:kube_pod_container_resource_requests:sum",
+                    "expression": "sum by (namespace, cluster) (    sum by (namespace, pod, cluster) (        max by (namespace, pod, container, cluster) (          kube_pod_container_resource_requests{resource=\"cpu\",job=\"kube-state-metrics\"}        ) * on(namespace, pod, cluster) group_left() max by (namespace, pod, cluster) (          kube_pod_status_phase{phase=~\"Pending|Running\"} == 1        )    ))"
+                  },
+                  {
+                    "record": "cluster:namespace:pod_memory:active:kube_pod_container_resource_limits",
+                    "expression": "kube_pod_container_resource_limits{resource=\"memory\",job=\"kube-state-metrics\"}  * on (namespace, pod, cluster)group_left() max by (namespace, pod, cluster) (  (kube_pod_status_phase{phase=~\"Pending|Running\"} == 1))"
+                  },
+                  {
+                    "record": "namespace_memory:kube_pod_container_resource_limits:sum",
+                    "expression": "sum by (namespace, cluster) (    sum by (namespace, pod, cluster) (        max by (namespace, pod, container, cluster) (          kube_pod_container_resource_limits{resource=\"memory\",job=\"kube-state-metrics\"}        ) * on(namespace, pod, cluster) group_left() max by (namespace, pod, cluster) (          kube_pod_status_phase{phase=~\"Pending|Running\"} == 1        )    ))"
+                  },
+                  {
+                    "record": "cluster:namespace:pod_cpu:active:kube_pod_container_resource_limits",
+                    "expression": "kube_pod_container_resource_limits{resource=\"cpu\",job=\"kube-state-metrics\"}  * on (namespace, pod, cluster)group_left() max by (namespace, pod, cluster) ( (kube_pod_status_phase{phase=~\"Pending|Running\"} == 1) )"
+                  },
+                  {
+                    "record": "namespace_cpu:kube_pod_container_resource_limits:sum",
+                    "expression": "sum by (namespace, cluster) (    sum by (namespace, pod, cluster) (        max by (namespace, pod, container, cluster) (          kube_pod_container_resource_limits{resource=\"cpu\",job=\"kube-state-metrics\"}        ) * on(namespace, pod, cluster) group_left() max by (namespace, pod, cluster) (          kube_pod_status_phase{phase=~\"Pending|Running\"} == 1        )    ))"
+                  },
+                  {
+                    "record": "namespace_workload_pod:kube_pod_owner:relabel",
+                    "expression": "max by (cluster, namespace, workload, pod) (  label_replace(    label_replace(      kube_pod_owner{job=\"kube-state-metrics\", owner_kind=\"ReplicaSet\"},      \"replicaset\", \"$1\", \"owner_name\", \"(.*)\"    ) * on(replicaset, namespace) group_left(owner_name) topk by(replicaset, namespace) (      1, max by (replicaset, namespace, owner_name) (        kube_replicaset_owner{job=\"kube-state-metrics\"}      )    ),    \"workload\", \"$1\", \"owner_name\", \"(.*)\"  ))",
+                    "labels": {
+                      "workload_type": "deployment"
+                    }
+                  },
+                  {
+                    "record": "namespace_workload_pod:kube_pod_owner:relabel",
+                    "expression": "max by (cluster, namespace, workload, pod) (  label_replace(    kube_pod_owner{job=\"kube-state-metrics\", owner_kind=\"DaemonSet\"},    \"workload\", \"$1\", \"owner_name\", \"(.*)\"  ))",
+                    "labels": {
+                      "workload_type": "daemonset"
+                    }
+                  },
+                  {
+                    "record": "namespace_workload_pod:kube_pod_owner:relabel",
+                    "expression": "max by (cluster, namespace, workload, pod) (  label_replace(    kube_pod_owner{job=\"kube-state-metrics\", owner_kind=\"StatefulSet\"},    \"workload\", \"$1\", \"owner_name\", \"(.*)\"  ))",
+                    "labels": {
+                      "workload_type": "statefulset"
+                    }
+                  },
+                  {
+                    "record": "namespace_workload_pod:kube_pod_owner:relabel",
+                    "expression": "max by (cluster, namespace, workload, pod) (  label_replace(    kube_pod_owner{job=\"kube-state-metrics\", owner_kind=\"Job\"},    \"workload\", \"$1\", \"owner_name\", \"(.*)\"  ))",
+                    "labels": {
+                      "workload_type": "job"
+                    }
+                  },
+                  {
+                    "record": ":node_memory_MemAvailable_bytes:sum",
+                    "expression": "sum(  node_memory_MemAvailable_bytes{job=\"node\"} or  (    node_memory_Buffers_bytes{job=\"node\"} +    node_memory_Cached_bytes{job=\"node\"} +    node_memory_MemFree_bytes{job=\"node\"} +    node_memory_Slab_bytes{job=\"node\"}  )) by (cluster)"
+                  },
+                  {
+                    "record": "cluster:node_cpu:ratio_rate5m",
+                    "expression": "sum(rate(node_cpu_seconds_total{job=\"node\",mode!=\"idle\",mode!=\"iowait\",mode!=\"steal\"}[5m])) by (cluster) /count(sum(node_cpu_seconds_total{job=\"node\"}) by (cluster, instance, cpu)) by (cluster)"
+                  }
+                ]
+              },
+              "tags": "[parameters('tags')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "aksCluster",
+        "azureMonitorWorkspace",
+        "dataCollection"
+      ]
+    },
+    "promConfigMap": {
+      "condition": "[parameters('grafanaEnabled')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "metrics-configmap",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "kubeConfig": {
+            "value": "[listClusterAdminCredential(resourceId('Microsoft.ContainerService/managedClusters', parameters('aksClusterName')), '2023-05-01').kubeconfigs[0].value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.1-experimental",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+            "_EXPERIMENTAL_FEATURES_ENABLED": [
+              "Extensibility"
+            ],
+            "_generator": {
+              "name": "bicep",
+              "version": "0.26.54.24096",
+              "templateHash": "17176985288624253073"
+            }
+          },
+          "parameters": {
+            "kubeConfig": {
+              "type": "securestring"
+            },
+            "prefix": {
+              "type": "string",
+              "defaultValue": "radius",
+              "metadata": {
+                "description": "Specifies the prefix of radius namepsace to be scraped by prometheus."
+              }
+            }
+          },
+          "variables": {
+            "podAnnotationNamespaceRegex": "[format('podannotationnamespaceregex = \"{0}.*\"', parameters('prefix'))]"
+          },
+          "imports": {
+            "kubernetes": {
+              "provider": "Kubernetes",
+              "version": "1.0.0",
+              "config": {
+                "namespace": "default",
+                "kubeConfig": "[parameters('kubeConfig')]"
+              }
+            }
+          },
+          "resources": {
+            "coreConfigMap_amaMetricsSettingsConfigmap": {
+              "import": "kubernetes",
+              "type": "core/ConfigMap@v1",
+              "properties": {
+                "metadata": {
+                  "name": "ama-metrics-settings-configmap",
+                  "namespace": "kube-system"
+                },
+                "data": {
+                  "config-version": "ver1",
+                  "debug-mode": "enabled = false",
+                  "default-scrape-settings-enabled": "kubelet = true\ncoredns = false\ncadvisor = true\nkubeproxy = false\napiserver = false\nkubestate = true\nnodeexporter = true\nwindowsexporter = false\nwindowskubeproxy = false\nkappiebasic = true\nprometheuscollectorhealth = false",
+                  "default-targets-metrics-keep-list": "kubelet = \"\"\ncoredns = \"\"\ncadvisor = \"\"\nkubeproxy = \"\"\napiserver = \"\"\nkubestate = \"\"\nnodeexporter = \"\"\nwindowsexporter = \"\"\nwindowskubeproxy = \"\"\npodannotations = \"\"\nkappiebasic = \"\"\nminimalingestionprofile = true",
+                  "default-targets-scrape-interval-settings": "kubelet = \"30s\"\ncoredns = \"30s\"\ncadvisor = \"30s\"\nkubeproxy = \"30s\"\napiserver = \"30s\"\nkubestate = \"30s\"\nnodeexporter = \"30s\"\nwindowsexporter = \"30s\"\nwindowskubeproxy = \"30s\"\nkappiebasic = \"30s\"\nprometheuscollectorhealth = \"30s\"\npodannotations = \"30s\"",
+                  "pod-annotation-based-scraping": "[variables('podAnnotationNamespaceRegex')]",
+                  "prometheus-collector-settings": "cluster_alias = \"\"",
+                  "schema-version": "v1"
+                }
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "aks",
+        "aksCluster",
+        "alertManagement",
+        "dataCollection"
+      ]
+    },
+    "deploymentScript": {
+      "condition": "[parameters('installKubernetesDependencies')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "deploymentScript",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "installKubernetesDependencies"
+          },
+          "clusterName": {
+            "value": "[reference('aksCluster').outputs.name.value]"
+          },
+          "resourceGroupName": {
+            "value": "[resourceGroup().name]"
+          },
+          "subscriptionId": {
+            "value": "[subscription().subscriptionId]"
+          },
+          "tenantId": {
+            "value": "[subscription().tenantId]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('defaultTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.1-experimental",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+            "_EXPERIMENTAL_FEATURES_ENABLED": [
+              "Extensibility"
+            ],
+            "_generator": {
+              "name": "bicep",
+              "version": "0.26.54.24096",
+              "templateHash": "427589963381207452"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "defaultValue": "BashScript",
+              "metadata": {
+                "description": "Specifies the name of the deployment script uri."
+              }
+            },
+            "clusterName": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the name of the AKS cluster."
+              }
+            },
+            "resourceGroupName": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().name]",
+              "metadata": {
+                "description": "Specifies the resource group name"
+              }
+            },
+            "subscriptionId": {
+              "type": "string",
+              "defaultValue": "[subscription().subscriptionId]",
+              "metadata": {
+                "description": "Specifies the subscription id."
+              }
+            },
+            "tenantId": {
+              "type": "string",
+              "defaultValue": "[subscription().tenantId]",
+              "metadata": {
+                "description": "Specifies the tenant id."
+              }
+            },
+            "utcValue": {
+              "type": "string",
+              "defaultValue": "[utcNow()]",
+              "metadata": {
+                "description": "Specifies the current datetime"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Specifies the location."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "Specifies the resource tags."
+              }
+            }
+          },
+          "variables": {
+            "$fxv#0": "#!/bin/bash\n\n# Cert-manager variables\nCertManagerVersion=\"v1.12.0\"\n\naz aks install-cli --only-show-errors\n\n# Get AKS credentials\naz aks get-credentials \\\n  --admin \\\n  --name $clusterName \\\n  --resource-group $resourceGroupName \\\n  --subscription $subscriptionId \\\n  --only-show-errors\n\necho \"Installing Helm...\"\ncurl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash\n\necho \"Installing cert-manager...\"\nkubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/$CertManagerVersion/cert-manager.yaml\n\necho '{}' >$AZ_SCRIPTS_OUTPUT_PATH",
+            "clusterAdminRoleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '0ab0b1a8-8aac-4efd-b8c2-3ee1fb270be8')]"
+          },
+          "resources": {
+            "aksCluster": {
+              "existing": true,
+              "type": "Microsoft.ContainerService/managedClusters",
+              "apiVersion": "2023-05-01",
+              "name": "[parameters('clusterName')]"
+            },
+            "managedIdentity": {
+              "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+              "apiVersion": "2023-01-31",
+              "name": "scriptManagedIdentity",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]"
+            },
+            "clusterAdminContributorRoleAssignment": {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.ContainerService/managedClusters/{0}', parameters('clusterName'))]",
+              "name": "[guid(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'scriptManagedIdentity'), resourceId('Microsoft.ContainerService/managedClusters', parameters('clusterName')), variables('clusterAdminRoleDefinitionId'))]",
+              "properties": {
+                "roleDefinitionId": "[variables('clusterAdminRoleDefinitionId')]",
+                "principalId": "[reference('managedIdentity').principalId]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "aksCluster",
+                "managedIdentity"
+              ]
+            },
+            "deploymentScript": {
+              "type": "Microsoft.Resources/deploymentScripts",
+              "apiVersion": "2020-10-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "kind": "AzureCLI",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'scriptManagedIdentity'))]": {}
+                }
+              },
+              "properties": {
+                "forceUpdateTag": "[parameters('utcValue')]",
+                "azCliVersion": "2.50.0",
+                "timeout": "PT30M",
+                "environmentVariables": [
+                  {
+                    "name": "clusterName",
+                    "value": "[parameters('clusterName')]"
+                  },
+                  {
+                    "name": "resourceGroupName",
+                    "value": "[parameters('resourceGroupName')]"
+                  },
+                  {
+                    "name": "subscriptionId",
+                    "value": "[parameters('subscriptionId')]"
+                  },
+                  {
+                    "name": "tenantId",
+                    "value": "[parameters('tenantId')]"
+                  }
+                ],
+                "scriptContent": "[variables('$fxv#0')]",
+                "cleanupPreference": "OnSuccess",
+                "retentionInterval": "P1D"
+              },
+              "dependsOn": [
+                "managedIdentity"
+              ]
+            },
+            "log": {
+              "existing": true,
+              "type": "Microsoft.Resources/deploymentScripts/logs",
+              "apiVersion": "2020-10-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'default')]",
+              "dependsOn": [
+                "deploymentScript"
+              ]
+            }
+          },
+          "outputs": {
+            "log": {
+              "type": "string",
+              "value": "[reference('log').log]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "aksCluster"
+      ]
+    }
+  },
+  "outputs": {
+    "aksControlPlaneFQDN": {
+      "type": "string",
+      "value": "[reference('aksCluster').outputs.controlPlaneFQDN.value]"
+    },
+    "grafanaDashboardFQDN": {
+      "type": "string",
+      "value": "[if(parameters('grafanaEnabled'), reference('grafanaDashboard').outputs.dashboardFQDN.value, '')]"
+    }
+  }
+}

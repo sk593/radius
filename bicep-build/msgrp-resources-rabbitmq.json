@@ -1,0 +1,163 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "2983628438847674749"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "global",
+      "metadata": {
+        "description": "Specifies the location for resources."
+      }
+    },
+    "magpieImage": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the image for the container resource."
+      }
+    },
+    "magpiePort": {
+      "type": "int",
+      "defaultValue": 3000,
+      "metadata": {
+        "description": "Specifies the port for the container resource."
+      }
+    },
+    "environment": {
+      "type": "string",
+      "defaultValue": "test",
+      "metadata": {
+        "description": "Specifies the environment for resources."
+      }
+    },
+    "rabbitmqImage": {
+      "type": "string",
+      "defaultValue": "rabbitmq:3.10",
+      "metadata": {
+        "description": "Specifies the image for the RabbitMQ container resource."
+      }
+    },
+    "rabbitmqPort": {
+      "type": "int",
+      "defaultValue": 5672,
+      "metadata": {
+        "description": "Specifies the port for the container resource."
+      }
+    },
+    "username": {
+      "type": "string",
+      "defaultValue": "guest",
+      "metadata": {
+        "description": "Specifies the RabbitMQ username."
+      }
+    },
+    "password": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Specifies the RabbitMQ password."
+      }
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "methods",
+      "version": "4.0.0"
+    }
+  },
+  "resources": {
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "msgrp-resources-rabbitmq",
+        "location": "[parameters('location')]",
+        "properties": {
+          "environment": "[parameters('environment')]"
+        }
+      }
+    },
+    "webapp": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "rmq-app-ctnr",
+        "location": "[parameters('location')]",
+        "properties": {
+          "application": "[reference('app').id]",
+          "container": {
+            "image": "[parameters('magpieImage')]",
+            "readinessProbe": {
+              "kind": "httpGet",
+              "containerPort": "[parameters('magpiePort')]",
+              "path": "/healthz"
+            }
+          },
+          "connections": {
+            "rabbitmq": {
+              "source": "[reference('rabbitmq').id]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "app",
+        "rabbitmq"
+      ]
+    },
+    "rabbitmqContainer": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "rmq-ctnr",
+        "location": "[parameters('location')]",
+        "properties": {
+          "application": "[reference('app').id]",
+          "container": {
+            "image": "[parameters('rabbitmqImage')]",
+            "ports": {
+              "rabbitmq": {
+                "containerPort": "[parameters('rabbitmqPort')]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "app"
+      ]
+    },
+    "rabbitmq": {
+      "import": "radius",
+      "type": "Applications.Messaging/rabbitMQQueues@2023-10-01-preview",
+      "properties": {
+        "name": "msg-rmq-rmq",
+        "properties": {
+          "application": "[reference('app').id]",
+          "environment": "[parameters('environment')]",
+          "resourceProvisioning": "manual",
+          "queue": "queue",
+          "host": "rmq-ctnr",
+          "port": "[parameters('rabbitmqPort')]",
+          "username": "[parameters('username')]",
+          "secrets": {
+            "password": "[parameters('password')]"
+          }
+        }
+      },
+      "dependsOn": [
+        "app"
+      ]
+    }
+  }
+}

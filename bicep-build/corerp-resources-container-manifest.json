@@ -1,0 +1,100 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "3178012172223466133"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "global",
+      "metadata": {
+        "description": "Specifies the location for resources."
+      }
+    },
+    "magpieimage": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the image of the container resource."
+      }
+    },
+    "port": {
+      "type": "int",
+      "defaultValue": 3000,
+      "metadata": {
+        "description": "Specifies the port of the container resource."
+      }
+    },
+    "environment": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the environment for resources."
+      }
+    }
+  },
+  "variables": {
+    "manifest": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: ctnr-manifest\n  labels:\n    app: ctnr-manifest\n  annotations:\n    source: base-manifest-test\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: ctnr-manifest\n  template:\n    metadata:\n      labels:\n        app: ctnr-manifest\n    spec:\n      serviceAccountName: ctnr-manifest\n      volumes:\n        - name: secret-vol\n          secret:\n            secretName: ctnr-manifest-secret0\n      containers:\n        - name: ctnr-manifest\n          ports:\n          - containerPort: 80\n            protocol: TCP\n          volumeMounts:\n          - name: secret-vol\n            readOnly: true\n            mountPath: /etc/secret-vol\n          env:\n          - name: TEST_SECRET_KEY\n            valueFrom:\n              secretKeyRef:\n                name: ctnr-manifest-secret1\n                key: secret1\n          - name: TEST_CONFIGMAP_KEY\n            valueFrom:\n              configMapKeyRef:\n                name: ctnr-manifest-config\n                key: TEST_CONFIGMAP\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: ctnr-manifest\n  annotations:\n    source: base-manifest-test\nspec:\n  selector:\n    app.kubernetes.io/name: ctnr-manifest\n  ports:\n    - protocol: TCP\n      port: 3000\n      targetPort: 3000\n---\napiVersion: v1\nkind: ServiceAccount\nmetadata:\n  name: ctnr-manifest\n  annotations:\n    source: base-manifest-test\n---\napiVersion: v1\nkind: Secret\nmetadata:\n  name: ctnr-manifest-secret0\n  annotations:\n    source: base-manifest-test\ntype: Opaque\nstringData:\n  'secret0': test-secret-0\n---\napiVersion: v1\nkind: Secret\nmetadata:\n  name: ctnr-manifest-secret1\n  annotations:\n    source: base-manifest-test\ntype: Opaque\nstringData:\n  'secret1': test-secret-1\n---\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: ctnr-manifest-config\n  annotations:\n    source: base-manifest-test\ndata:\n  TEST_CONFIGMAP: test-configmap\n"
+  },
+  "imports": {
+    "radius": {
+      "provider": "methods",
+      "version": "4.0.0"
+    }
+  },
+  "resources": {
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "corerp-resources-container-manifest",
+        "location": "[parameters('location')]",
+        "properties": {
+          "environment": "[parameters('environment')]",
+          "extensions": [
+            {
+              "kind": "kubernetesNamespace",
+              "namespace": "corerp-resources-container-manifest"
+            }
+          ]
+        }
+      }
+    },
+    "container": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "ctnr-manifest",
+        "location": "[parameters('location')]",
+        "properties": {
+          "application": "[reference('app').id]",
+          "container": {
+            "image": "[parameters('magpieimage')]",
+            "ports": {
+              "web": {
+                "containerPort": "[parameters('port')]"
+              }
+            }
+          },
+          "connections": {},
+          "runtimes": {
+            "kubernetes": {
+              "base": "[variables('manifest')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "app"
+      ]
+    }
+  }
+}

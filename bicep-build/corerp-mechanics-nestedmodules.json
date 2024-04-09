@@ -1,0 +1,164 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "7299619612514619708"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "global",
+      "metadata": {
+        "description": "Specifies the location for resources."
+      }
+    },
+    "environment": {
+      "type": "string",
+      "defaultValue": "test",
+      "metadata": {
+        "description": "Specifies the environment for the resource."
+      }
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "methods",
+      "version": "4.0.0"
+    }
+  },
+  "resources": {
+    "outerApp": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "corerp-mechanics-nestedmodules-outerapp",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "environment": {
+            "value": "[parameters('environment')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.1-experimental",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+            "_EXPERIMENTAL_FEATURES_ENABLED": [
+              "Extensibility"
+            ],
+            "_generator": {
+              "name": "bicep",
+              "version": "0.26.54.24096",
+              "templateHash": "2761183338887052757"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "environment": {
+              "type": "string"
+            }
+          },
+          "imports": {
+            "radius": {
+              "provider": "methods",
+              "version": "4.0.0"
+            }
+          },
+          "resources": {
+            "outerApp": {
+              "import": "radius",
+              "type": "Applications.Core/applications@2023-10-01-preview",
+              "properties": {
+                "name": "corerp-mechanics-nestedmodules-outerapp-app",
+                "location": "[parameters('location')]",
+                "properties": {
+                  "environment": "[parameters('environment')]"
+                }
+              }
+            },
+            "innerApp": {
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "corerp-mechanics-nestedmodules-innerapp",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "environment": {
+                    "value": "[parameters('environment')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "languageVersion": "2.1-experimental",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+                    "_EXPERIMENTAL_FEATURES_ENABLED": [
+                      "Extensibility"
+                    ],
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.26.54.24096",
+                      "templateHash": "968619561777930855"
+                    }
+                  },
+                  "parameters": {
+                    "location": {
+                      "type": "string"
+                    },
+                    "environment": {
+                      "type": "string"
+                    }
+                  },
+                  "imports": {
+                    "radius": {
+                      "provider": "methods",
+                      "version": "4.0.0"
+                    }
+                  },
+                  "resources": {
+                    "innerApp": {
+                      "import": "radius",
+                      "type": "Applications.Core/applications@2023-10-01-preview",
+                      "properties": {
+                        "name": "corerp-mechanics-nestedmodules-innerapp-app",
+                        "location": "[parameters('location')]",
+                        "properties": {
+                          "environment": "[parameters('environment')]"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

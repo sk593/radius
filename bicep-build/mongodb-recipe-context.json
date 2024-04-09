@@ -1,0 +1,87 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "6802557639764874391"
+    }
+  },
+  "parameters": {
+    "context": {
+      "type": "object"
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "rg": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().name]"
+    }
+  },
+  "resources": {
+    "account::dbinner": {
+      "type": "Microsoft.DocumentDB/databaseAccounts/mongodbDatabases",
+      "apiVersion": "2021-10-15-preview",
+      "name": "[format('{0}/{1}', format('account-{0}', parameters('rg')), format('{0}-{1}', parameters('context').resource.name, parameters('rg')))]",
+      "properties": {
+        "resource": {
+          "id": "[format('{0}-{1}', parameters('context').resource.name, parameters('rg'))]"
+        },
+        "options": {
+          "throughput": 400
+        }
+      },
+      "dependsOn": [
+        "account"
+      ]
+    },
+    "account": {
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "apiVersion": "2021-10-15-preview",
+      "name": "[format('account-{0}', parameters('rg'))]",
+      "location": "[parameters('location')]",
+      "kind": "MongoDB",
+      "tags": {
+        "radiustest": "recipe-mongodb"
+      },
+      "properties": {
+        "consistencyPolicy": {
+          "defaultConsistencyLevel": "Session"
+        },
+        "locations": [
+          {
+            "locationName": "eastus",
+            "failoverPriority": 0,
+            "isZoneRedundant": false
+          }
+        ],
+        "databaseAccountOfferType": "Standard"
+      }
+    }
+  },
+  "outputs": {
+    "result": {
+      "type": "object",
+      "value": {
+        "values": {
+          "host": "[format('account-{0}.mongo.cosmos.azure.com', parameters('rg'))]",
+          "port": 10255,
+          "database": "[format('{0}-{1}', parameters('context').resource.name, parameters('rg'))]",
+          "username": "[format('account-{0}', parameters('rg'))]"
+        },
+        "secrets": {
+          "connectionString": "[listConnectionStrings(resourceId('Microsoft.DocumentDB/databaseAccounts', format('account-{0}', parameters('rg'))), '2021-10-15-preview').connectionStrings[0].connectionString]",
+          "password": "[listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', format('account-{0}', parameters('rg'))), '2021-10-15-preview').primaryMasterKey]"
+        }
+      }
+    }
+  }
+}

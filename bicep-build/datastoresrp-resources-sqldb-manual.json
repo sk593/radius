@@ -1,0 +1,173 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "4977070242389132054"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "global",
+      "metadata": {
+        "description": "Specifies the location for resources."
+      }
+    },
+    "magpieImage": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the image for the container resource."
+      }
+    },
+    "magpiePort": {
+      "type": "int",
+      "defaultValue": 3000,
+      "metadata": {
+        "description": "Specifies the port for the container resource."
+      }
+    },
+    "environment": {
+      "type": "string",
+      "defaultValue": "test",
+      "metadata": {
+        "description": "Specifies the environment for resources."
+      }
+    },
+    "sqlImage": {
+      "type": "string",
+      "defaultValue": "mcr.microsoft.com/mssql/server:2019-latest",
+      "metadata": {
+        "description": "Specifies the image for the sql container resource."
+      }
+    },
+    "sqlPort": {
+      "type": "int",
+      "defaultValue": 1433,
+      "metadata": {
+        "description": "Specifies the port for the container resource."
+      }
+    },
+    "username": {
+      "type": "string",
+      "defaultValue": "sa",
+      "metadata": {
+        "description": "Specifies the SQL username."
+      }
+    },
+    "password": {
+      "type": "securestring",
+      "defaultValue": "[newGuid()]",
+      "metadata": {
+        "description": "Specifies the SQL password."
+      }
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "methods",
+      "version": "4.0.0"
+    }
+  },
+  "resources": {
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "dsrp-resources-sql",
+        "location": "[parameters('location')]",
+        "properties": {
+          "environment": "[parameters('environment')]"
+        }
+      }
+    },
+    "webapp": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "sql-app-ctnr",
+        "location": "[parameters('location')]",
+        "properties": {
+          "application": "[reference('app').id]",
+          "connections": {
+            "sql": {
+              "source": "[reference('db').id]"
+            }
+          },
+          "container": {
+            "image": "[parameters('magpieImage')]",
+            "env": {
+              "CONNECTION_SQL_CONNECTIONSTRING": "[invokeResourceMethod('db', 'listSecrets', createArray()).connectionString]"
+            },
+            "readinessProbe": {
+              "kind": "httpGet",
+              "containerPort": "[parameters('magpiePort')]",
+              "path": "/healthz"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "app",
+        "db"
+      ]
+    },
+    "db": {
+      "import": "radius",
+      "type": "Applications.Datastores/sqlDatabases@2023-10-01-preview",
+      "properties": {
+        "name": "sql-db",
+        "location": "[parameters('location')]",
+        "properties": {
+          "application": "[reference('app').id]",
+          "environment": "[parameters('environment')]",
+          "server": "sql-ctnr",
+          "database": "master",
+          "resourceProvisioning": "manual",
+          "port": "[parameters('sqlPort')]",
+          "username": "[parameters('username')]",
+          "secrets": {
+            "password": "[parameters('password')]"
+          }
+        }
+      },
+      "dependsOn": [
+        "app"
+      ]
+    },
+    "sqlContainer": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "sql-ctnr",
+        "location": "[parameters('location')]",
+        "properties": {
+          "application": "[reference('app').id]",
+          "container": {
+            "image": "[parameters('sqlImage')]",
+            "env": {
+              "ACCEPT_EULA": "Y",
+              "MSSQL_PID": "Developer",
+              "MSSQL_SA_PASSWORD": "[parameters('password')]"
+            },
+            "ports": {
+              "sql": {
+                "containerPort": "[parameters('sqlPort')]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "app"
+      ]
+    }
+  }
+}

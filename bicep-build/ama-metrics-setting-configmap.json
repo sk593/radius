@@ -1,0 +1,63 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "17176985288624253073"
+    }
+  },
+  "parameters": {
+    "kubeConfig": {
+      "type": "securestring"
+    },
+    "prefix": {
+      "type": "string",
+      "defaultValue": "radius",
+      "metadata": {
+        "description": "Specifies the prefix of radius namepsace to be scraped by prometheus."
+      }
+    }
+  },
+  "variables": {
+    "podAnnotationNamespaceRegex": "[format('podannotationnamespaceregex = \"{0}.*\"', parameters('prefix'))]"
+  },
+  "imports": {
+    "kubernetes": {
+      "provider": "Kubernetes",
+      "version": "1.0.0",
+      "config": {
+        "namespace": "default",
+        "kubeConfig": "[parameters('kubeConfig')]"
+      }
+    }
+  },
+  "resources": {
+    "coreConfigMap_amaMetricsSettingsConfigmap": {
+      "import": "kubernetes",
+      "type": "core/ConfigMap@v1",
+      "properties": {
+        "metadata": {
+          "name": "ama-metrics-settings-configmap",
+          "namespace": "kube-system"
+        },
+        "data": {
+          "config-version": "ver1",
+          "debug-mode": "enabled = false",
+          "default-scrape-settings-enabled": "kubelet = true\ncoredns = false\ncadvisor = true\nkubeproxy = false\napiserver = false\nkubestate = true\nnodeexporter = true\nwindowsexporter = false\nwindowskubeproxy = false\nkappiebasic = true\nprometheuscollectorhealth = false",
+          "default-targets-metrics-keep-list": "kubelet = \"\"\ncoredns = \"\"\ncadvisor = \"\"\nkubeproxy = \"\"\napiserver = \"\"\nkubestate = \"\"\nnodeexporter = \"\"\nwindowsexporter = \"\"\nwindowskubeproxy = \"\"\npodannotations = \"\"\nkappiebasic = \"\"\nminimalingestionprofile = true",
+          "default-targets-scrape-interval-settings": "kubelet = \"30s\"\ncoredns = \"30s\"\ncadvisor = \"30s\"\nkubeproxy = \"30s\"\napiserver = \"30s\"\nkubestate = \"30s\"\nnodeexporter = \"30s\"\nwindowsexporter = \"30s\"\nwindowskubeproxy = \"30s\"\nkappiebasic = \"30s\"\nprometheuscollectorhealth = \"30s\"\npodannotations = \"30s\"",
+          "pod-annotation-based-scraping": "[variables('podAnnotationNamespaceRegex')]",
+          "prometheus-collector-settings": "cluster_alias = \"\"",
+          "schema-version": "v1"
+        }
+      }
+    }
+  }
+}

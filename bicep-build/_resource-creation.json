@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "2350610672593103631"
+    }
+  },
+  "parameters": {
+    "context": {
+      "type": "object"
+    }
+  },
+  "variables": {
+    "basename": "[parameters('context').resource.name]"
+  },
+  "imports": {
+    "radius": {
+      "provider": "methods",
+      "version": "4.0.0"
+    }
+  },
+  "resources": {
+    "extender": {
+      "import": "radius",
+      "type": "Applications.Core/extenders@2023-10-01-preview",
+      "properties": {
+        "name": "[format('{0}-module', variables('basename'))]",
+        "properties": {
+          "application": "[parameters('context').application.id]",
+          "environment": "[parameters('context').environment.id]",
+          "resourceProvisioning": "manual",
+          "message": "hello from module resource"
+        }
+      }
+    }
+  }
+}

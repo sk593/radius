@@ -22,6 +22,7 @@ resource app 'Applications.Core/applications@2023-10-01-preview' = {
 
 resource env 'Applications.Core/environments@2023-10-01-preview' = {
   name: 'invalid-env'
+  location: location
   properties: {
     compute: {
       kind: 'kubernetes'
@@ -41,6 +42,7 @@ resource env 'Applications.Core/environments@2023-10-01-preview' = {
 
 resource extender 'Applications.Core/extenders@2023-10-01-preview' = {
   name: 'invalid-extndr'
+  location: location
   properties: {
     application: app.location
     environment: env.id

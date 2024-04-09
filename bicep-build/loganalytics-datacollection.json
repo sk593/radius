@@ -1,0 +1,194 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "15170389653698146346"
+    }
+  },
+  "parameters": {
+    "clusterResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the AKS cluster resource Id."
+      }
+    },
+    "clusterLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the AKS cluster resource location."
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the log analytics workspace resource id."
+      }
+    },
+    "logAnalyticsWorkspaceLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the log analytics workspace resource location."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "metadata": {
+        "description": "Specifies the resource tags."
+      }
+    }
+  },
+  "variables": {
+    "clusterSubscriptionId": "[split(parameters('clusterResourceId'), '/')[2]]",
+    "clusterResourceGroup": "[split(parameters('clusterResourceId'), '/')[4]]",
+    "clusterName": "[split(parameters('clusterResourceId'), '/')[8]]",
+    "dcrName": "[format('MSCI-{0}-{1}', parameters('logAnalyticsWorkspaceLocation'), variables('clusterName'))]",
+    "dcraName": "[format('MSCI-{0}-{1}', parameters('clusterLocation'), variables('clusterName'))]"
+  },
+  "resources": {
+    "dcr": {
+      "type": "Microsoft.Insights/dataCollectionRules",
+      "apiVersion": "2022-06-01",
+      "name": "[variables('dcrName')]",
+      "location": "[parameters('logAnalyticsWorkspaceLocation')]",
+      "kind": "Linux",
+      "properties": {
+        "dataSources": {
+          "extensions": [
+            {
+              "name": "ContainerInsightsExtension",
+              "streams": [
+                "Microsoft-ContainerInsights-Group-Default"
+              ],
+              "extensionName": "ContainerInsights",
+              "extensionSettings": {
+                "dataCollectionSettings": {
+                  "interval": "1m",
+                  "namespaceFilteringMode": "Off",
+                  "enableContainerLogV2": true
+                }
+              }
+            }
+          ],
+          "syslog": []
+        },
+        "destinations": {
+          "logAnalytics": [
+            {
+              "workspaceResourceId": "[parameters('logAnalyticsWorkspaceId')]",
+              "name": "ciworkspace"
+            }
+          ]
+        },
+        "dataFlows": [
+          {
+            "streams": [
+              "Microsoft-ContainerInsights-Group-Default"
+            ],
+            "destinations": [
+              "ciworkspace"
+            ]
+          }
+        ]
+      },
+      "tags": "[parameters('tags')]"
+    },
+    "logAnalyticsDcraClusterResourceId": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('loganalytics-dcra-{0}', uniqueString(parameters('clusterResourceId')))]",
+      "subscriptionId": "[variables('clusterSubscriptionId')]",
+      "resourceGroup": "[variables('clusterResourceGroup')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "dataCollectionRuleId": {
+            "value": "[resourceId('Microsoft.Insights/dataCollectionRules', variables('dcrName'))]"
+          },
+          "clusterName": {
+            "value": "[variables('clusterName')]"
+          },
+          "dcraName": {
+            "value": "[variables('dcraName')]"
+          },
+          "clusterLocation": {
+            "value": "[parameters('clusterLocation')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.1-experimental",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+            "_EXPERIMENTAL_FEATURES_ENABLED": [
+              "Extensibility"
+            ],
+            "_generator": {
+              "name": "bicep",
+              "version": "0.26.54.24096",
+              "templateHash": "5024351077006304689"
+            }
+          },
+          "parameters": {
+            "dataCollectionRuleId": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the data collection rule resource id."
+              }
+            },
+            "dcraName": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the data collection rule resource association name."
+              }
+            },
+            "clusterName": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the AKS cluster name."
+              }
+            },
+            "clusterLocation": {
+              "type": "string",
+              "metadata": {
+                "description": "Specifies the AKS cluster resource location."
+              }
+            }
+          },
+          "resources": {
+            "dataCollectionRuleAssociations": {
+              "type": "Microsoft.ContainerService/managedClusters/providers/dataCollectionRuleAssociations",
+              "apiVersion": "2022-06-01",
+              "name": "[format('{0}/microsoft.insights/{1}', parameters('clusterName'), parameters('dcraName'))]",
+              "location": "[parameters('clusterLocation')]",
+              "properties": {
+                "description": "Association of data collection rule. Deleting this association will break the data collection for this AKS Cluster.",
+                "dataCollectionRuleId": "[parameters('dataCollectionRuleId')]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "dcr"
+      ]
+    }
+  },
+  "outputs": {
+    "dcrId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Insights/dataCollectionRules', variables('dcrName'))]"
+    }
+  }
+}

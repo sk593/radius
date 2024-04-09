@@ -1,0 +1,86 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "9062458451984643445"
+    }
+  },
+  "parameters": {
+    "creationTimestamp": {
+      "type": "string"
+    },
+    "dbSubnetGroupName": {
+      "type": "string"
+    },
+    "dbName": {
+      "type": "string"
+    }
+  },
+  "imports": {
+    "aws": {
+      "provider": "aws",
+      "version": "4.0.0"
+    }
+  },
+  "resources": {
+    "subnetGroup": {
+      "import": "aws",
+      "type": "AWS.RDS/DBSubnetGroup@default",
+      "properties": {
+        "alias": "[parameters('dbSubnetGroupName')]",
+        "properties": {
+          "DBSubnetGroupDescription": "[parameters('dbSubnetGroupName')]",
+          "SubnetIds": [
+            ""
+          ],
+          "Tags": [
+            {
+              "Key": "RadiusCreationTimestamp",
+              "Value": "[parameters('creationTimestamp')]"
+            }
+          ]
+        }
+      }
+    },
+    "db": {
+      "import": "aws",
+      "type": "AWS.RDS/DBInstance@default",
+      "properties": {
+        "alias": "[parameters('dbName')]",
+        "properties": {
+          "DBInstanceIdentifier": "[parameters('dbName')]",
+          "Engine": "sqlserver-ex",
+          "EngineVersion": "15.00.4153.1.v1",
+          "DBInstanceClass": "db.t3.small",
+          "AllocatedStorage": "20",
+          "MaxAllocatedStorage": 30,
+          "StorageEncrypted": false,
+          "MasterUsername": "username",
+          "MasterUserPassword": "password",
+          "Port": "1434",
+          "DBSubnetGroupName": "[parameters('dbSubnetGroupName')]",
+          "DBSecurityGroups": [],
+          "PreferredMaintenanceWindow": "Mon:00:00-Mon:03:00",
+          "PreferredBackupWindow": "03:00-06:00",
+          "LicenseModel": "license-included",
+          "Timezone": "GMT Standard Time",
+          "CharacterSetName": "Latin1_General_CI_AS",
+          "Tags": [
+            {
+              "Key": "RadiusCreationTimestamp",
+              "Value": "[parameters('creationTimestamp')]"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

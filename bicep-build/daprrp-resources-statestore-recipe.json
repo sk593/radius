@@ -1,0 +1,125 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.1-experimental",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_EXPERIMENTAL_WARNING": "This template uses ARM features that are experimental. Experimental features should be enabled for testing purposes only, as there are no guarantees about the quality or stability of these features. Do not enable these settings for any production usage, or your production environment may be subject to breaking.",
+    "_EXPERIMENTAL_FEATURES_ENABLED": [
+      "Extensibility"
+    ],
+    "_generator": {
+      "name": "bicep",
+      "version": "0.26.54.24096",
+      "templateHash": "10862442903808396957"
+    }
+  },
+  "parameters": {
+    "magpieimage": {
+      "type": "string"
+    },
+    "registry": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "imports": {
+    "radius": {
+      "provider": "methods",
+      "version": "4.0.0"
+    }
+  },
+  "resources": {
+    "env": {
+      "import": "radius",
+      "type": "Applications.Core/environments@2023-10-01-preview",
+      "properties": {
+        "name": "daprrp-env-recipes-env",
+        "properties": {
+          "compute": {
+            "kind": "kubernetes",
+            "resourceId": "self",
+            "namespace": "daprrp-env-recipes-env"
+          },
+          "recipes": {
+            "Applications.Dapr/stateStores": {
+              "default": {
+                "templateKind": "bicep",
+                "templatePath": "[format('{0}/test/functional/shared/recipes/dapr-state-store:{1}', parameters('registry'), parameters('version'))]"
+              }
+            }
+          }
+        }
+      }
+    },
+    "app": {
+      "import": "radius",
+      "type": "Applications.Core/applications@2023-10-01-preview",
+      "properties": {
+        "name": "daprrp-rs-sts-recipe",
+        "properties": {
+          "environment": "[reference('env').id]",
+          "extensions": [
+            {
+              "kind": "kubernetesNamespace",
+              "namespace": "daprrp-rs-sts-recipe"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "env"
+      ]
+    },
+    "webapp": {
+      "import": "radius",
+      "type": "Applications.Core/containers@2023-10-01-preview",
+      "properties": {
+        "name": "dapr-sts-recipe-ctnr",
+        "properties": {
+          "application": "[reference('app').id]",
+          "connections": {
+            "daprstatestore": {
+              "source": "[reference('statestore').id]"
+            }
+          },
+          "container": {
+            "image": "[parameters('magpieimage')]",
+            "readinessProbe": {
+              "kind": "httpGet",
+              "containerPort": 3000,
+              "path": "/healthz"
+            }
+          },
+          "extensions": [
+            {
+              "kind": "daprSidecar",
+              "appId": "dapr-sts-recipe-ctnr",
+              "appPort": 3000
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "app",
+        "statestore"
+      ]
+    },
+    "statestore": {
+      "import": "radius",
+      "type": "Applications.Dapr/stateStores@2023-10-01-preview",
+      "properties": {
+        "name": "dapr-sts-recipe",
+        "properties": {
+          "application": "[reference('app').id]",
+          "environment": "[reference('env').id]"
+        }
+      },
+      "dependsOn": [
+        "app",
+        "env"
+      ]
+    }
+  }
+}
