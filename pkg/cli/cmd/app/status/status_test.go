@@ -23,13 +23,11 @@ import (
 	"github.com/radius-project/radius/pkg/cli/clients"
 	"github.com/radius-project/radius/pkg/cli/clients_new/generated"
 	"github.com/radius-project/radius/pkg/cli/clierrors"
-	"github.com/radius-project/radius/pkg/cli/config"
 	"github.com/radius-project/radius/pkg/cli/connections"
 	"github.com/radius-project/radius/pkg/cli/framework"
 	"github.com/radius-project/radius/pkg/cli/output"
 	"github.com/radius-project/radius/pkg/cli/workspaces"
 	"github.com/radius-project/radius/pkg/corerp/api/v20231001preview"
-	"github.com/radius-project/radius/pkg/to"
 	"github.com/radius-project/radius/pkg/ucp/resources"
 	"github.com/radius-project/radius/test/radcli"
 	"github.com/stretchr/testify/require"
@@ -42,20 +40,6 @@ func Test_CommandValidation(t *testing.T) {
 
 func Test_Validate(t *testing.T) {
 	testcases := []radcli.ValidateInput{
-		{
-			Name:          "Status Command with default application",
-			Input:         []string{},
-			ExpectedValid: true,
-			ConfigHolder: framework.ConfigHolder{
-				ConfigFilePath: "",
-				Config:         radcli.LoadConfigWithWorkspace(t),
-				DirectoryConfig: &config.DirectoryConfig{
-					Workspace: config.DirectoryWorkspaceConfig{
-						Application: "test-application",
-					},
-				},
-			},
-		},
 		{
 			Name:          "Status Command with flag",
 			Input:         []string{"-a", "test-app"},
@@ -84,6 +68,15 @@ func Test_Validate(t *testing.T) {
 			},
 		},
 		{
+			Name:          "Status Command with no application - invalid",
+			Input:         []string{},
+			ExpectedValid: false,
+			ConfigHolder: framework.ConfigHolder{
+				ConfigFilePath: "",
+				Config:         radcli.LoadConfigWithWorkspace(t),
+			},
+		},
+		{
 			Name:          "Status Command with incorrect args",
 			Input:         []string{"foo", "bar"},
 			ExpectedValid: false,
@@ -102,7 +95,7 @@ func Test_Run(t *testing.T) {
 		defer ctrl.Finish()
 
 		application := v20231001preview.ApplicationResource{
-			Name: to.Ptr("test-app"),
+			Name: new("test-app"),
 		}
 
 		appManagementClient := clients.NewMockApplicationsManagementClient(ctrl)
@@ -113,12 +106,12 @@ func Test_Run(t *testing.T) {
 
 		resourceList := []generated.GenericResource{
 			{
-				Name: to.Ptr("test-container"),
-				ID:   to.Ptr("/planes/radius/local/resourceGroups/test-group/providers/Applications.Core/containers/test-container"),
+				Name: new("test-container"),
+				ID:   new("/planes/radius/local/resourceGroups/test-group/providers/Applications.Core/containers/test-container"),
 			},
 			{
-				Name: to.Ptr("test-gateway"),
-				ID:   to.Ptr("/planes/radius/local/resourceGroups/test-group/providers/Applications.Core/gateways/test-gateway"),
+				Name: new("test-gateway"),
+				ID:   new("/planes/radius/local/resourceGroups/test-group/providers/Applications.Core/gateways/test-gateway"),
 			},
 		}
 
@@ -135,7 +128,7 @@ func Test_Run(t *testing.T) {
 
 		diagnosticsClient.EXPECT().
 			GetPublicEndpoint(gomock.Any(), clients.EndpointOptions{ResourceID: mustParse(t, "/planes/radius/local/resourceGroups/test-group/providers/Applications.Core/gateways/test-gateway")}).
-			Return(to.Ptr("http://some-url.example.com"), nil).
+			Return(new("http://some-url.example.com"), nil).
 			Times(1)
 
 		workspace := &workspaces.Workspace{

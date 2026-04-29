@@ -28,7 +28,6 @@ import (
 	"github.com/radius-project/radius/pkg/cli/bicep"
 	"github.com/radius-project/radius/pkg/cli/clients"
 	deploycmd "github.com/radius-project/radius/pkg/cli/cmd/deploy"
-	"github.com/radius-project/radius/pkg/cli/config"
 	"github.com/radius-project/radius/pkg/cli/connections"
 	"github.com/radius-project/radius/pkg/cli/deploy"
 	"github.com/radius-project/radius/pkg/cli/framework"
@@ -40,7 +39,6 @@ import (
 	"github.com/radius-project/radius/pkg/corerp/api/v20231001preview"
 	"github.com/radius-project/radius/pkg/corerp/api/v20250801preview"
 	corerpfake "github.com/radius-project/radius/pkg/corerp/api/v20250801preview/fake"
-	"github.com/radius-project/radius/pkg/to"
 	"github.com/radius-project/radius/test/radcli"
 	"github.com/radius-project/radius/test/testcontext"
 	appsv1 "k8s.io/api/apps/v1"
@@ -83,17 +81,12 @@ func Test_Validate(t *testing.T) {
 		},
 
 		{
-			Name:          "rad run - app set by directory config",
+			Name:          "rad run - app is required when not set by flag - invalid",
 			Input:         []string{"app.bicep", "-e", "/planes/radius/local/resourceGroups/test-resource-group/providers/Applications.Core/environments/prod"},
-			ExpectedValid: true,
+			ExpectedValid: false,
 			ConfigHolder: framework.ConfigHolder{
 				ConfigFilePath: "",
 				Config:         configWithWorkspace,
-				DirectoryConfig: &config.DirectoryConfig{
-					Workspace: config.DirectoryWorkspaceConfig{
-						Application: "my-app",
-					},
-				},
 			},
 			ConfigureMocks: func(mocks radcli.ValidateMocks) {
 				mocks.Bicep.EXPECT().
@@ -502,8 +495,8 @@ func Test_Run(t *testing.T) {
 		Properties: &v20231001preview.ApplicationProperties{
 			Status: &v20231001preview.ResourceStatus{
 				Compute: &v20231001preview.KubernetesCompute{
-					Kind:      to.Ptr("kubernetes"),
-					Namespace: to.Ptr("test-namespace-app"),
+					Kind:      new("kubernetes"),
+					Namespace: new("test-namespace-app"),
 				},
 			},
 		},
@@ -668,8 +661,8 @@ func Test_Run_NoDashboard(t *testing.T) {
 		Properties: &v20231001preview.ApplicationProperties{
 			Status: &v20231001preview.ResourceStatus{
 				Compute: &v20231001preview.KubernetesCompute{
-					Kind:      to.Ptr("kubernetes"),
-					Namespace: to.Ptr("test-namespace-app"),
+					Kind:      new("kubernetes"),
+					Namespace: new("test-namespace-app"),
 				},
 			},
 		},
@@ -772,7 +765,7 @@ type PortForwardOptionsMatcher struct {
 	LabelSelector labels.Selector
 }
 
-func (p PortForwardOptionsMatcher) Matches(x interface{}) bool {
+func (p PortForwardOptionsMatcher) Matches(x any) bool {
 	if s, ok := x.(portforward.Options); ok {
 		return p.LabelSelector.String() == s.LabelSelector.String()
 	}

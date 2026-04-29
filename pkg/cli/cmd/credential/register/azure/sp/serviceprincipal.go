@@ -107,7 +107,7 @@ func NewRunner(factory framework.Factory) *Runner {
 // Validate checks for the presence of a workspace, output format, client ID, client secret and tenant ID, and
 // sets them in the Runner struct if they are present. If any of these are not present, an error is returned.
 func (r *Runner) Validate(cmd *cobra.Command, args []string) error {
-	workspace, err := cli.RequireWorkspace(cmd, r.ConfigHolder.Config, r.ConfigHolder.DirectoryConfig)
+	workspace, err := cli.RequireWorkspace(cmd, r.ConfigHolder.Config)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func (r *Runner) Run(ctx context.Context) error {
 	credential := ucp.AzureCredentialResource{
 		Location: to.Ptr(v1.LocationGlobal),
 		Type:     to.Ptr(cli_credential.AzureCredential),
-		ID:       to.Ptr(fmt.Sprintf(common.AzureCredentialID, "default")),
+		ID:       new(fmt.Sprintf(common.AzureCredentialID, "default")),
 		Properties: &ucp.AzureServicePrincipalProperties{
 			Storage: &ucp.CredentialStorageProperties{
 				Kind: to.Ptr(ucp.CredentialStorageKindInternal),

@@ -30,7 +30,6 @@ import (
 	"github.com/radius-project/radius/pkg/cli/output"
 	"github.com/radius-project/radius/pkg/cli/workspaces"
 	corerpv20250801 "github.com/radius-project/radius/pkg/corerp/api/v20250801preview"
-	"github.com/radius-project/radius/pkg/to"
 	"github.com/radius-project/radius/pkg/ucp/resources"
 )
 
@@ -86,7 +85,7 @@ rad env update myenv --clear-kubernetes
 	cmd.Flags().Bool(commonflags.ClearEnvAzureFlag, false, "Specify if azure provider needs to be cleared on env")
 	cmd.Flags().Bool(commonflags.ClearEnvAWSFlag, false, "Specify if aws provider needs to be cleared on env")
 	cmd.Flags().Bool(commonflags.ClearEnvKubernetesFlag, false, "Specify if kubernetes provider needs to be cleared on env (--preview)")
-	cmd.Flags().StringSliceP("recipe-packs", "", []string{}, "Specify recipe packs to replace the environment's recipe pack list (--preview). Accepts comma-separated values.")
+	cmd.Flags().StringArrayP("recipe-packs", "", []string{}, "Specify recipe packs to be added to the environment (--preview)")
 	commonflags.AddAzureScopeFlags(cmd)
 	commonflags.AddAWSScopeFlags(cmd)
 	commonflags.AddKubernetesScopeFlags(cmd)
@@ -128,7 +127,7 @@ func (r *Runner) Validate(cmd *cobra.Command, args []string) error {
 		r.noFlagsSet = true
 		return cmd.Help()
 	}
-	workspace, err := cli.RequireWorkspace(cmd, r.ConfigHolder.Config, r.ConfigHolder.DirectoryConfig)
+	workspace, err := cli.RequireWorkspace(cmd, r.ConfigHolder.Config)
 	if err != nil {
 		return err
 	}
@@ -161,8 +160,8 @@ func (r *Runner) Validate(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		r.providers.Azure.SubscriptionID = to.Ptr(azureSubId)
-		r.providers.Azure.ResourceGroupName = to.Ptr(azureRgId)
+		r.providers.Azure.SubscriptionID = new(azureSubId)
+		r.providers.Azure.ResourceGroupName = new(azureRgId)
 	}
 
 	r.clearEnvAzure, err = cmd.Flags().GetBool(commonflags.ClearEnvAzureFlag)
@@ -183,8 +182,8 @@ func (r *Runner) Validate(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		r.providers.Aws.Region = to.Ptr(awsRegion)
-		r.providers.Aws.AccountID = to.Ptr(awsAccountId)
+		r.providers.Aws.Region = new(awsRegion)
+		r.providers.Aws.AccountID = new(awsAccountId)
 	}
 
 	r.clearEnvAws, err = cmd.Flags().GetBool(commonflags.ClearEnvAWSFlag)
@@ -198,7 +197,7 @@ func (r *Runner) Validate(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		r.providers.Kubernetes.Namespace = to.Ptr(k8sNamespace)
+		r.providers.Kubernetes.Namespace = new(k8sNamespace)
 	}
 
 	r.clearEnvKubernetes, err = cmd.Flags().GetBool(commonflags.ClearEnvKubernetesFlag)
@@ -206,7 +205,7 @@ func (r *Runner) Validate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	r.recipePacks, err = cmd.Flags().GetStringSlice("recipe-packs")
+	r.recipePacks, err = cmd.Flags().GetStringArray("recipe-packs")
 	if err != nil {
 		return err
 	}
@@ -274,14 +273,11 @@ func (r *Runner) Run(ctx context.Context) error {
 		env.Properties.Providers.Kubernetes = r.providers.Kubernetes
 	}
 
-	// replace recipe packs if any are specified
+	// add recipe packs if any
 	if len(r.recipePacks) > 0 {
-		if len(env.Properties.RecipePacks) > 0 {
-			r.Output.LogInfo("WARNING: The existing recipe pack list will be replaced with the specified packs.")
+		if env.Properties.RecipePacks == nil {
+			env.Properties.RecipePacks = []*string{}
 		}
-
-		// Create a new list to replace the existing recipe packs
-		newRecipePacks := []*string{}
 
 		for _, recipePack := range r.recipePacks {
 			ID, err := resources.Parse(recipePack)
@@ -307,14 +303,13 @@ func (r *Runner) Run(ctx context.Context) error {
 			cfclient := rClientFactory.NewRecipePacksClient()
 			_, err = cfclient.Get(ctx, ID.Name(), &corerpv20250801.RecipePacksClientGetOptions{})
 			if err != nil {
-				return clierrors.Message("Recipe pack %q does not exist. Please provide a valid recipe pack to set on the environment.", recipePack)
+				return clierrors.Message("Recipe pack %q does not exist. Please provide a valid recipe pack to add to the environment.", recipePack)
 			}
 
-			newRecipePacks = append(newRecipePacks, to.Ptr(ID.String()))
+			if !recipePackExists(env.Properties.RecipePacks, ID.String()) {
+				env.Properties.RecipePacks = append(env.Properties.RecipePacks, new(ID.String()))
+			}
 		}
-
-		// Replace the entire recipe packs list
-		env.Properties.RecipePacks = newRecipePacks
 	}
 
 	r.Output.LogInfo("Updating Environment...")
@@ -353,4 +348,13 @@ func (r *Runner) Run(ctx context.Context) error {
 	r.Output.LogInfo("Successfully updated environment %q.", r.EnvironmentName)
 
 	return nil
+}
+
+func recipePackExists(packs []*string, id string) bool {
+	for _, p := range packs {
+		if p != nil && *p == id {
+			return true
+		}
+	}
+	return false
 }
